@@ -3,6 +3,24 @@ import React, { useMemo, useEffect, useState } from "react";
 /** =========================
  *  Fake DB (MVP local)
  *  ========================= */
+const BANK_LOCATIONS = [
+  {
+    country: "Djibouti",
+    banks: ["EXIM Bank", "Salaam Bank", "BCIMR", "MTN Money"],
+    currencies: ["DJF", "USD", "EUR"],
+  },
+  {
+    country: "Ethiopia",
+    banks: ["Commercial Bank of Ethiopia", "Dashen Bank"],
+    currencies: ["ETB", "USD"],
+  },
+  {
+    country: "France",
+    banks: ["BNP Paribas", "Société Générale", "Crédit Agricole"],
+    currencies: ["EUR", "USD"],
+  },
+];
+
 const BANKS = [
   {
     id: "exim",
@@ -33,18 +51,20 @@ const FAKE_USERS = [
   },
 ];
 
-// Cotisations (exemple demo)
 const FAKE_COTISATIONS = [
   {
     id: "c_001",
     userId: "u_client",
-    bankId: "exim",
+    country: "Djibouti",
+    bankName: "EXIM Bank",
+    currency: "DJF",
     accountNumber: "100200300",
     amount: 6000,
     months: 6,
     total: 36000,
-    status: "CONFIRMED", // PENDING | CONFIRMED
+    status: "CONFIRMED",
     createdAt: new Date().toISOString(),
+    otpVerified: true,
   },
 ];
 
@@ -196,11 +216,10 @@ function StepPill({ index, current, title }) {
  *  ========================= */
 export default function App() {
   const [route, setRoute] = useState("HOME"); // HOME | LOGIN | CLIENT | ADMIN
-  const [authRole, setAuthRole] = useState(null); // null | "CLIENT" | "ADMIN"
-  const [session, setSession] = useState(null); // { userId, role }
+  const [authRole, setAuthRole] = useState(null);
+  const [session, setSession] = useState(null);
   const [toast, setToast] = useState(null);
 
-  // local DB states (MVP)
   const [users, setUsers] = useState(FAKE_USERS);
   const [cotisations, setCotisations] = useState(FAKE_COTISATIONS);
 
@@ -210,7 +229,6 @@ export default function App() {
     showToast._t = window.setTimeout(() => setToast(null), 2600);
   }
 
-  // Restore session
   useEffect(() => {
     const saved = localStorage.getItem("vip_session");
     if (saved) {
@@ -299,7 +317,6 @@ export default function App() {
         {route === "HOME" ? (
           <HomePage
             onSignup={() => {
-              // inscription => aller direct onboarding client (step 1 vide)
               setSession({ userId: null, role: "CLIENT" });
               setAuthRole("CLIENT");
               setRoute("CLIENT");
@@ -330,7 +347,6 @@ export default function App() {
               setSession(s);
               setAuthRole(found.role);
               localStorage.setItem("vip_session", JSON.stringify(s));
-
               showToast("Connexion réussie ✅");
               setRoute(found.role === "ADMIN" ? "ADMIN" : "CLIENT");
             }}
@@ -339,16 +355,13 @@ export default function App() {
 
         {route === "CLIENT" ? (
           <ClientOnboardingPage
-            // si connecté client => pré-remplir
             initialUser={currentUser}
-            banks={BANKS}
+            banks={BANK_LOCATIONS}
             onGoLogin={() => {
               setAuthRole("CLIENT");
               setRoute("LOGIN");
             }}
             onDone={(data) => {
-              // data = { profile, cotisation }
-              // 1) si userId null (inscription sans login), on crée user local
               let userId = session?.userId;
 
               if (!userId) {
@@ -357,7 +370,7 @@ export default function App() {
                   id: userId,
                   role: "CLIENT",
                   email: data.profile.email || `client_${Date.now()}@mail.com`,
-                  password: "client123", // MVP
+                  password: "client123",
                   fullName: data.profile.fullName,
                   phone: data.profile.phone,
                   address: data.profile.address,
@@ -368,7 +381,6 @@ export default function App() {
                 setSession(s);
                 localStorage.setItem("vip_session", JSON.stringify(s));
               } else {
-                // si déjà connecté, on met à jour profil
                 setUsers((prev) =>
                   prev.map((u) =>
                     u.id === userId
@@ -384,19 +396,17 @@ export default function App() {
                 );
               }
 
-              // 2) ajouter cotisation
               const cot = {
                 id: "c_" + Math.random().toString(16).slice(2),
                 userId,
                 ...data.cotisation,
                 status: "CONFIRMED",
                 createdAt: new Date().toISOString(),
+                otpVerified: true,
               };
 
               setCotisations((p) => [cot, ...p]);
               showToast("Cotisation confirmée ✅");
-
-              // si tu veux rediriger admin automatiquement (non)
             }}
           />
         ) : null}
@@ -406,7 +416,6 @@ export default function App() {
             banks={BANKS}
             users={users}
             cotisations={cotisations}
-            onGoHome={() => setRoute("HOME")}
           />
         ) : null}
       </div>
@@ -441,9 +450,9 @@ function HomePage({ onSignup, onLogin }) {
 
           <div className="mt-6 flex flex-wrap gap-2">
             <Badge>Onboarding</Badge>
-            <Badge>Live summary</Badge>
-            <Badge>Admin dashboard</Badge>
-            <Badge>Ready for API</Badge>
+            <Badge>OTP</Badge>
+            <Badge>Multi-pays</Badge>
+            <Badge>Multi-devise</Badge>
           </div>
         </div>
       </div>
@@ -472,7 +481,7 @@ function HomePage({ onSignup, onLogin }) {
 }
 
 /** =========================
- *  Login Page (Client/Admin)
+ *  Login Page
  *  ========================= */
 function LoginPage({ defaultRole, onLogin, onBack }) {
   const [role, setRole] = useState(defaultRole || "CLIENT");
@@ -567,12 +576,9 @@ function LoginPage({ defaultRole, onLogin, onBack }) {
 }
 
 /** =========================
- *  Client Onboarding (Your VIP page)
- *  - If user already logged: prefill name/phone/email/address
- *  - If not logged: user completes then we create user locally
+ *  Client Onboarding
  *  ========================= */
 function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
-  // Steps: 1 Profil → 2 OTP → 3 Cotisation
   const [step, setStep] = useState(1);
 
   const [register, setRegister] = useState({
@@ -582,21 +588,21 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
     address: initialUser?.address || "",
   });
 
-  // OTP state
   const [otp, setOtp] = useState({
     sent: false,
     digits: ["", "", "", "", "", ""],
-    serverCode: "", // MVP only (fake)
+    serverCode: "",
     sending: false,
     verifying: false,
     verified: false,
     cooldown: 0,
   });
 
-  // Cotisation state
   const [pay, setPay] = useState({
-    bankId: "",
-    accountNumber: "", // text input
+    country: "",
+    bankName: "",
+    currency: "",
+    accountNumber: "",
     amount: "",
     months: "",
     accepted: false,
@@ -606,9 +612,9 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
   const [localToast, setLocalToast] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const selectedBank = useMemo(
-    () => banks.find((b) => b.id === pay.bankId),
-    [banks, pay.bankId],
+  const selectedCountry = useMemo(
+    () => banks.find((c) => c.country === pay.country),
+    [banks, pay.country],
   );
 
   const total = useMemo(() => {
@@ -623,7 +629,6 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
     showToast._t = window.setTimeout(() => setLocalToast(null), 2600);
   }
 
-  // cooldown timer
   useEffect(() => {
     if (otp.cooldown <= 0) return;
     const t = setInterval(() => {
@@ -631,6 +636,8 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
     }, 1000);
     return () => clearInterval(t);
   }, [otp.cooldown]);
+
+  const getOtpCode = () => otp.digits.join("");
 
   function validateStep1() {
     const e = {};
@@ -643,23 +650,19 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
     return Object.keys(e).length === 0;
   }
 
-  function getOtpCode() {
-    return otp.digits.join("");
-  }
-
-  function validateOtpStep() {
+  function validateOtp() {
     const e = {};
-    const code = getOtpCode();
     if (!otp.sent) e.otp = "Clique sur “Envoyer OTP”.";
-    if (!code || code.length !== 6) e.otp = "OTP invalide (6 chiffres).";
+    if (getOtpCode().length !== 6) e.otp = "OTP invalide (6 chiffres).";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
   function validateStep3() {
     const e = {};
-    if (!pay.bankId) e.bankId = "Choisis une banque.";
-
+    if (!pay.country) e.country = "Pays requis.";
+    if (!pay.bankName) e.bankName = "Banque requise.";
+    if (!pay.currency) e.currency = "Devise requise.";
     if (!pay.accountNumber.trim()) e.accountNumber = "Numéro de compte requis.";
     if (pay.accountNumber.trim().length < 6)
       e.accountNumber = "Numéro de compte trop court.";
@@ -672,7 +675,6 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
     if (!pay.months || Number.isNaN(monthsNum) || monthsNum <= 0)
       e.months = "Mois invalide.";
     if (!pay.accepted) e.accepted = "Tu dois accepter les conditions.";
-
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -689,54 +691,40 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
       setErrors({ phone: "Téléphone requis pour envoyer OTP." });
       return;
     }
-
     setOtp((p) => ({ ...p, sending: true }));
-    try {
-      await new Promise((r) => setTimeout(r, 650));
-      const generated = String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
+    await new Promise((r) => setTimeout(r, 600));
+    const generated = String(Math.floor(100000 + Math.random() * 900000));
+    console.log("OTP (MVP) generated:", generated);
 
-      console.log("OTP (MVP) generated:", generated);
+    setOtp((p) => ({
+      ...p,
+      sent: true,
+      serverCode: generated,
+      sending: false,
+      cooldown: 30,
+      verified: false,
+      digits: ["", "", "", "", "", ""],
+    }));
 
-      setOtp((p) => ({
-        ...p,
-        sent: true,
-        serverCode: generated,
-        sending: false,
-        cooldown: 30,
-        verified: false,
-        digits: ["", "", "", "", "", ""],
-      }));
-
-      showToast(`OTP envoyé au ${register.phone} ✅`);
-      setErrors((prev) => ({ ...prev, otp: undefined }));
-    } catch {
-      setOtp((p) => ({ ...p, sending: false }));
-      showToast("Erreur lors de l’envoi OTP.", "error");
-    }
+    showToast(`OTP envoyé au ${register.phone} ✅`);
   }
 
   async function verifyOtp(e) {
     e.preventDefault();
-    if (!validateOtpStep()) return;
+    if (!validateOtp()) return;
 
     setOtp((p) => ({ ...p, verifying: true }));
-    try {
-      await new Promise((r) => setTimeout(r, 550));
+    await new Promise((r) => setTimeout(r, 500));
 
-      const code = getOtpCode();
-      if (code !== otp.serverCode) {
-        setOtp((p) => ({ ...p, verifying: false }));
-        showToast("OTP incorrect ❌", "error");
-        return;
-      }
-
-      setOtp((p) => ({ ...p, verifying: false, verified: true }));
-      showToast("OTP vérifié ✅");
-      setStep(3);
-    } catch {
+    if (getOtpCode() !== otp.serverCode) {
       setOtp((p) => ({ ...p, verifying: false }));
-      showToast("Erreur vérification OTP.", "error");
+      showToast("OTP incorrect ❌", "error");
+      return;
     }
+
+    setOtp((p) => ({ ...p, verifying: false, verified: true }));
+    showToast("OTP vérifié ✅");
+    setStep(3);
   }
 
   async function onConfirm(e) {
@@ -744,38 +732,29 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
     if (!validateStep3()) return;
 
     setLoading(true);
-    try {
-      await new Promise((r) => setTimeout(r, 800));
+    await new Promise((r) => setTimeout(r, 700));
 
-      onDone({
-        profile: register,
-        cotisation: {
-          bankId: pay.bankId,
-          accountNumber: pay.accountNumber.trim(),
-          amount: Number(pay.amount),
-          months: Number(pay.months),
-          total,
-        },
-        otpVerified: otp.verified,
-      });
+    onDone({
+      profile: register,
+      cotisation: {
+        country: pay.country,
+        bankName: pay.bankName,
+        currency: pay.currency,
+        accountNumber: pay.accountNumber.trim(),
+        amount: Number(pay.amount),
+        months: Number(pay.months),
+        total,
+      },
+    });
 
-      showToast("Cotisation confirmée ✅");
-    } catch {
-      showToast("Erreur lors de la confirmation.", "error");
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   }
 
-  /** =========================
-   *  OTP Component (Bank style)
-   *  ========================= */
   function OtpInput() {
     const inputs = React.useRef([]);
 
     function focusIndex(i) {
-      const el = inputs.current[i];
-      if (el) el.focus();
+      inputs.current[i]?.focus?.();
     }
 
     function setDigit(index, value) {
@@ -788,23 +767,15 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
 
     function onChange(i, e) {
       const v = e.target.value.replace(/\D/g, "");
-      if (!v) {
-        setDigit(i, "");
-        return;
-      }
-      // If user types multiple digits quickly, keep last one
-      const digit = v.slice(-1);
-      setDigit(i, digit);
+      if (!v) return setDigit(i, "");
+      setDigit(i, v.slice(-1));
       if (i < 5) focusIndex(i + 1);
     }
 
     function onKeyDown(i, e) {
       if (e.key === "Backspace") {
-        if (otp.digits[i]) {
-          // clear current
-          setDigit(i, "");
-        } else if (i > 0) {
-          // go back
+        if (otp.digits[i]) setDigit(i, "");
+        else if (i > 0) {
           focusIndex(i - 1);
           setDigit(i - 1, "");
         }
@@ -820,17 +791,13 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
         .slice(0, 6);
       if (!text) return;
       e.preventDefault();
-
       const arr = text.split("");
-      setOtp((p) => {
-        const next = ["", "", "", "", "", ""];
-        for (let i = 0; i < 6; i++) next[i] = arr[i] || "";
-        return { ...p, digits: next };
-      });
-
-      // focus last filled
+      setOtp((p) => ({
+        ...p,
+        digits: arr.concat(["", "", "", "", "", ""]).slice(0, 6),
+      }));
       const last = Math.min(text.length, 6) - 1;
-      if (last >= 0) setTimeout(() => focusIndex(last), 0);
+      setTimeout(() => focusIndex(last), 0);
     }
 
     return (
@@ -872,11 +839,6 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
         {errors.otp ? (
           <p className="text-xs font-semibold text-red-300">{errors.otp}</p>
         ) : null}
-
-        <div className="text-xs text-white/45">
-          * MVP : OTP généré en console. En production, on envoie via SMS API
-          (Twilio/MTN/…).
-        </div>
       </div>
     );
   }
@@ -893,7 +855,7 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
             <div>
               <div className="text-xl font-black">Onboarding Client</div>
               <div className="text-sm text-white/55">
-                Profil → OTP → Cotisation
+                Profil → OTP → Cotisation (multi-pays & multi-devise)
               </div>
             </div>
 
@@ -916,7 +878,6 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
           </div>
 
           <div className="mt-5">
-            {/* STEP 1 */}
             {step === 1 ? (
               <form onSubmit={onSubmitRegister} className="space-y-5">
                 <div className="grid gap-4 md:grid-cols-2">
@@ -930,7 +891,6 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                       onChange={(e) =>
                         setRegister((p) => ({ ...p, fullName: e.target.value }))
                       }
-                      placeholder="Ex: Abdourahman Youssouf"
                     />
                   </Field>
 
@@ -944,7 +904,6 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                       onChange={(e) =>
                         setRegister((p) => ({ ...p, phone: e.target.value }))
                       }
-                      placeholder="Ex: 77 12 34 56"
                       inputMode="tel"
                     />
                   </Field>
@@ -956,22 +915,16 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                     onChange={(e) =>
                       setRegister((p) => ({ ...p, email: e.target.value }))
                     }
-                    placeholder="Ex: abdou@mail.com"
                     inputMode="email"
                   />
                 </Field>
 
-                <Field
-                  label="Adresse"
-                  error={errors.address}
-                  hint="Quartier, ville..."
-                >
+                <Field label="Adresse" error={errors.address}>
                   <Input
                     value={register.address}
                     onChange={(e) =>
                       setRegister((p) => ({ ...p, address: e.target.value }))
                     }
-                    placeholder="Ex: Djibouti, Balbala..."
                   />
                 </Field>
 
@@ -979,7 +932,6 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
               </form>
             ) : null}
 
-            {/* STEP 2 OTP */}
             {step === 2 ? (
               <form onSubmit={verifyOtp} className="space-y-5">
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -1005,7 +957,6 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                       ? `Renvoyer (${otp.cooldown}s)`
                       : "Envoyer OTP"}
                   </PrimaryButton>
-
                   <GhostButton type="button" onClick={() => setStep(1)}>
                     Changer de numéro
                   </GhostButton>
@@ -1019,28 +970,32 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
               </form>
             ) : null}
 
-            {/* STEP 3 */}
             {step === 3 ? (
               <form onSubmit={onConfirm} className="space-y-5">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Sélectionnez une banque" error={errors.bankId}>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Field label="Pays de la banque" error={errors.country}>
                     <div className="relative">
                       <Select
-                        value={pay.bankId}
+                        value={pay.country}
                         onChange={(e) =>
-                          setPay((p) => ({ ...p, bankId: e.target.value }))
+                          setPay((p) => ({
+                            ...p,
+                            country: e.target.value,
+                            bankName: "",
+                            currency: "",
+                          }))
                         }
                       >
                         <option value="" className="bg-slate-900">
-                          -- Choisir --
+                          -- Choisir pays --
                         </option>
-                        {banks.map((b) => (
+                        {banks.map((c) => (
                           <option
-                            key={b.id}
-                            value={b.id}
+                            key={c.country}
+                            value={c.country}
                             className="bg-slate-900"
                           >
-                            {b.name}
+                            {c.country}
                           </option>
                         ))}
                       </Select>
@@ -1050,34 +1005,86 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                     </div>
                   </Field>
 
-                  <Field
-                    label="Numéro de compte"
-                    error={errors.accountNumber}
-                    hint="Saisissez votre compte"
-                  >
-                    <Input
-                      value={pay.accountNumber}
-                      onChange={(e) =>
-                        setPay((p) => ({ ...p, accountNumber: e.target.value }))
-                      }
-                      placeholder="Ex: 100200300"
-                      inputMode="numeric"
-                    />
+                  <Field label="Banque" error={errors.bankName}>
+                    <div className="relative">
+                      <Select
+                        value={pay.bankName}
+                        disabled={!pay.country}
+                        onChange={(e) =>
+                          setPay((p) => ({ ...p, bankName: e.target.value }))
+                        }
+                        className={cn(!pay.country && "opacity-60")}
+                      >
+                        <option value="" className="bg-slate-900">
+                          -- Choisir banque --
+                        </option>
+                        {selectedCountry?.banks.map((b) => (
+                          <option key={b} value={b} className="bg-slate-900">
+                            {b}
+                          </option>
+                        ))}
+                      </Select>
+                      <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/50">
+                        ▾
+                      </div>
+                    </div>
+                  </Field>
+
+                  <Field label="Devise du compte" error={errors.currency}>
+                    <div className="relative">
+                      <Select
+                        value={pay.currency}
+                        disabled={!pay.country}
+                        onChange={(e) =>
+                          setPay((p) => ({ ...p, currency: e.target.value }))
+                        }
+                        className={cn(!pay.country && "opacity-60")}
+                      >
+                        <option value="" className="bg-slate-900">
+                          -- Devise --
+                        </option>
+                        {selectedCountry?.currencies.map((cur) => (
+                          <option
+                            key={cur}
+                            value={cur}
+                            className="bg-slate-900"
+                          >
+                            {cur}
+                          </option>
+                        ))}
+                      </Select>
+                      <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/50">
+                        ▾
+                      </div>
+                    </div>
                   </Field>
                 </div>
+
+                <Field
+                  label="Numéro de compte"
+                  error={errors.accountNumber}
+                  hint="Saisissez votre compte"
+                >
+                  <Input
+                    value={pay.accountNumber}
+                    onChange={(e) =>
+                      setPay((p) => ({ ...p, accountNumber: e.target.value }))
+                    }
+                    inputMode="numeric"
+                  />
+                </Field>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field
                     label="Montant à cotiser"
                     error={errors.amount}
-                    hint="DJF"
+                    hint={pay.currency || "Devise"}
                   >
                     <Input
                       value={pay.amount}
                       onChange={(e) =>
                         setPay((p) => ({ ...p, amount: e.target.value }))
                       }
-                      placeholder="Ex: 6000"
                       inputMode="numeric"
                     />
                   </Field>
@@ -1088,7 +1095,6 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                       onChange={(e) =>
                         setPay((p) => ({ ...p, months: e.target.value }))
                       }
-                      placeholder="Ex: 6"
                       inputMode="numeric"
                     />
                   </Field>
@@ -1175,6 +1181,7 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                 </div>
               </div>
 
+              {/* OTP block with demo + copy */}
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-bold text-white/50">OTP</div>
@@ -1203,7 +1210,6 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                   </span>
                 </div>
 
-                {/* ✅ Affichage OTP dans résumé live + bouton copier */}
                 <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
                   <div className="text-[11px] font-bold text-white/45">
                     Code OTP (exemple)
@@ -1258,10 +1264,16 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                 </div>
                 <div className="mt-2 space-y-1 text-white/85">
                   <div>
+                    <span className="text-white/50">Pays:</span>{" "}
+                    <span className="font-semibold">{pay.country || "-"}</span>
+                  </div>
+                  <div>
                     <span className="text-white/50">Banque:</span>{" "}
-                    <span className="font-semibold">
-                      {selectedBank?.name || "-"}
-                    </span>
+                    <span className="font-semibold">{pay.bankName || "-"}</span>
+                  </div>
+                  <div>
+                    <span className="text-white/50">Devise:</span>{" "}
+                    <span className="font-semibold">{pay.currency || "-"}</span>
                   </div>
                   <div>
                     <span className="text-white/50">Compte:</span>{" "}
@@ -1272,7 +1284,7 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                   <div>
                     <span className="text-white/50">Montant:</span>{" "}
                     <span className="font-semibold">
-                      {pay.amount || "0"} DJF
+                      {pay.amount || "0"} {pay.currency || ""}
                     </span>
                   </div>
                   <div>
@@ -1285,7 +1297,7 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                       Total estimé
                     </div>
                     <div className="mt-1 text-lg font-black text-emerald-50">
-                      {total} DJF
+                      {total} {pay.currency || ""}
                     </div>
                   </div>
                 </div>
@@ -1313,7 +1325,7 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-xs text-white/50 backdrop-blur-xl">
-            OTP VIP : 6 cases + auto focus + collage + backspace intelligent.
+            VIP UX : OTP demo + multi-pays + multi-devise + résumé live
           </div>
         </div>
       </div>
@@ -1330,13 +1342,15 @@ function AdminDashboardPage({ users, cotisations, banks }) {
   const enriched = useMemo(() => {
     return cotisations.map((c) => {
       const user = users.find((u) => u.id === c.userId);
-      const bank = banks.find((b) => b.id === c.bankId);
+      const bank =
+        banks.find((b) => b.name === c.bankName) ||
+        banks.find((b) => b.id === c.bankId);
       return {
         ...c,
         userName: user?.fullName || "—",
         userPhone: user?.phone || "—",
         userEmail: user?.email || "—",
-        bankName: bank?.name || c.bankId,
+        bankNameResolved: c.bankName || bank?.name || c.bankId || "—",
       };
     });
   }, [cotisations, users, banks]);
@@ -1362,15 +1376,9 @@ function AdminDashboardPage({ users, cotisations, banks }) {
           <div className="flex flex-wrap gap-2">
             <Badge>{clients.length} clients</Badge>
             <Badge>{countConfirmed} cotisations</Badge>
-            <Badge>Total {totalConfirmed} DJF</Badge>
+            <Badge>Total {totalConfirmed} (mixed)</Badge>
           </div>
         </div>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Kpi title="Clients" value={clients.length} />
-        <Kpi title="Cotisations confirmées" value={countConfirmed} />
-        <Kpi title="Montant total (DJF)" value={totalConfirmed} />
       </div>
 
       <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
@@ -1387,9 +1395,11 @@ function AdminDashboardPage({ users, cotisations, banks }) {
               <tr>
                 <th className="py-3 pr-4">Client</th>
                 <th className="py-3 pr-4">Téléphone</th>
+                <th className="py-3 pr-4">Pays</th>
                 <th className="py-3 pr-4">Banque</th>
-                <th className="py-3 pr-4">Compte</th>
+                <th className="py-3 pr-4">Devise</th>
                 <th className="py-3 pr-4">Total</th>
+                <th className="py-3 pr-4">OTP</th>
                 <th className="py-3 pr-4">Statut</th>
               </tr>
             </thead>
@@ -1400,10 +1410,29 @@ function AdminDashboardPage({ users, cotisations, banks }) {
                     {c.userName}
                   </td>
                   <td className="py-3 pr-4 text-white/70">{c.userPhone}</td>
-                  <td className="py-3 pr-4 text-white/70">{c.bankName}</td>
-                  <td className="py-3 pr-4 text-white/70">{c.accountNumber}</td>
+                  <td className="py-3 pr-4 text-white/70">
+                    {c.country || "—"}
+                  </td>
+                  <td className="py-3 pr-4 text-white/70">
+                    {c.bankNameResolved}
+                  </td>
+                  <td className="py-3 pr-4 text-white/70">
+                    {c.currency || "—"}
+                  </td>
                   <td className="py-3 pr-4 font-extrabold text-white/85">
-                    {c.total} DJF
+                    {c.total} {c.currency || ""}
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full border px-2.5 py-1 text-xs font-black",
+                        c.otpVerified
+                          ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+                          : "border-yellow-300/20 bg-yellow-500/10 text-yellow-100",
+                      )}
+                    >
+                      {c.otpVerified ? "OK" : "NO"}
+                    </span>
                   </td>
                   <td className="py-3 pr-4">
                     <span
@@ -1421,7 +1450,7 @@ function AdminDashboardPage({ users, cotisations, banks }) {
               ))}
               {enriched.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-white/50">
+                  <td colSpan={8} className="py-6 text-center text-white/50">
                     Aucune cotisation pour le moment.
                   </td>
                 </tr>
@@ -1434,16 +1463,6 @@ function AdminDashboardPage({ users, cotisations, banks }) {
           * MVP: données locales. Branche Prisma/API ensuite.
         </div>
       </div>
-    </div>
-  );
-}
-
-function Kpi({ title, value }) {
-  return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-      <div className="text-xs font-bold text-white/50">{title}</div>
-      <div className="mt-2 text-3xl font-black text-white/90">{value}</div>
-      <div className="mt-1 text-xs text-white/45">Live demo</div>
     </div>
   );
 }
