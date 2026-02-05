@@ -65,6 +65,7 @@ const FAKE_COTISATIONS = [
     status: "CONFIRMED",
     createdAt: new Date().toISOString(),
     otpVerified: true,
+    conditionsAccepted: true,
   },
 ];
 
@@ -364,6 +365,7 @@ export default function App() {
             onDone={(data) => {
               let userId = session?.userId;
 
+              // create user (if signup flow)
               if (!userId) {
                 userId = "u_" + Math.random().toString(16).slice(2);
                 const newUser = {
@@ -381,6 +383,7 @@ export default function App() {
                 setSession(s);
                 localStorage.setItem("vip_session", JSON.stringify(s));
               } else {
+                // update existing user
                 setUsers((prev) =>
                   prev.map((u) =>
                     u.id === userId
@@ -402,7 +405,8 @@ export default function App() {
                 ...data.cotisation,
                 status: "CONFIRMED",
                 createdAt: new Date().toISOString(),
-                otpVerified: true,
+                otpVerified: data.otpVerified === true,
+                conditionsAccepted: data.profile.accepted === true,
               };
 
               setCotisations((p) => [cot, ...p]);
@@ -413,9 +417,9 @@ export default function App() {
 
         {route === "ADMIN" ? (
           <AdminDashboardPage
-            banks={BANKS}
             users={users}
             cotisations={cotisations}
+            banks={BANKS}
           />
         ) : null}
       </div>
@@ -450,7 +454,7 @@ function HomePage({ onSignup, onLogin }) {
 
           <div className="mt-6 flex flex-wrap gap-2">
             <Badge>Onboarding</Badge>
-            <Badge>OTP</Badge>
+            <Badge>OTP (signup)</Badge>
             <Badge>Multi-pays</Badge>
             <Badge>Multi-devise</Badge>
           </div>
@@ -579,13 +583,16 @@ function LoginPage({ defaultRole, onLogin, onBack }) {
  *  Client Onboarding
  *  ========================= */
 function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
+  // 1 Profil → 2 OTP → 3 Cotisation
   const [step, setStep] = useState(1);
 
+  // ✅ CONDITIONS MOVED HERE
   const [register, setRegister] = useState({
     fullName: initialUser?.fullName || "",
     phone: initialUser?.phone || "",
     email: initialUser?.email || "",
     address: initialUser?.address || "",
+    accepted: false,
   });
 
   const [otp, setOtp] = useState({
@@ -598,6 +605,7 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
     cooldown: 0,
   });
 
+  // ✅ removed accepted from pay
   const [pay, setPay] = useState({
     country: "",
     bankName: "",
@@ -605,7 +613,6 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
     accountNumber: "",
     amount: "",
     months: "",
-    accepted: false,
   });
 
   const [errors, setErrors] = useState({});
@@ -646,6 +653,7 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
     if (register.email.trim() && !register.email.includes("@"))
       e.email = "Email invalide.";
     if (!register.address.trim()) e.address = "Adresse requise.";
+    if (!register.accepted) e.accepted = "Tu dois accepter les conditions.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -674,16 +682,23 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
       e.amount = "Montant invalide.";
     if (!pay.months || Number.isNaN(monthsNum) || monthsNum <= 0)
       e.months = "Mois invalide.";
-    if (!pay.accepted) e.accepted = "Tu dois accepter les conditions.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
+  // ✅ OTP only for signup (not connected)
   function onSubmitRegister(e) {
     e.preventDefault();
     if (!validateStep1()) return;
+
     showToast("Profil validé ✅");
-    setStep(2);
+
+    if (initialUser) {
+      // skip OTP for connected user
+      setStep(3);
+    } else {
+      setStep(2);
+    }
   }
 
   async function sendOtp() {
@@ -745,6 +760,7 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
         months: Number(pay.months),
         total,
       },
+      otpVerified: initialUser ? false : otp.verified, // signup only
     });
 
     setLoading(false);
@@ -855,7 +871,8 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
             <div>
               <div className="text-xl font-black">Onboarding Client</div>
               <div className="text-sm text-white/55">
-                Profil → OTP → Cotisation (multi-pays & multi-devise)
+                Profil →{" "}
+                {initialUser ? "Cotisation (OTP skipped)" : "OTP → Cotisation"}
               </div>
             </div>
 
@@ -867,10 +884,11 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                 Déjà un compte ? Connexion
               </button>
             ) : (
-              <Badge>Pré-rempli</Badge>
+              <Badge>Connecté</Badge>
             )}
           </div>
 
+          {/* Steps (kept same for simplicity) */}
           <div className="mt-4 flex flex-wrap gap-3">
             <StepPill index={1} current={step} title="Profil" />
             <StepPill index={2} current={step} title="OTP" />
@@ -878,6 +896,7 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
           </div>
 
           <div className="mt-5">
+            {/* STEP 1 */}
             {step === 1 ? (
               <form onSubmit={onSubmitRegister} className="space-y-5">
                 <div className="grid gap-4 md:grid-cols-2">
@@ -928,10 +947,44 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                   />
                 </Field>
 
-                <PrimaryButton type="submit">Continuer (OTP)</PrimaryButton>
+                {/* ✅ CONDITIONS MOVED HERE */}
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <label className="flex gap-3">
+                    <input
+                      type="checkbox"
+                      checked={register.accepted}
+                      onChange={(e) =>
+                        setRegister((p) => ({
+                          ...p,
+                          accepted: e.target.checked,
+                        }))
+                      }
+                      className="mt-1 h-4 w-4 rounded border-white/20 bg-white/10 text-emerald-400 focus:ring-emerald-400/20"
+                    />
+                    <div>
+                      <div className="text-sm font-extrabold text-white/90">
+                        J’accepte les conditions d’utilisation
+                      </div>
+                      <div className="mt-1 text-xs text-white/55">
+                        Ex : après confirmation, la cotisation suit les règles
+                        du service.
+                      </div>
+                      {errors.accepted ? (
+                        <div className="mt-2 text-xs font-semibold text-red-300">
+                          {errors.accepted}
+                        </div>
+                      ) : null}
+                    </div>
+                  </label>
+                </div>
+
+                <PrimaryButton type="submit">
+                  {initialUser ? "Continuer (Cotisation)" : "Continuer (OTP)"}
+                </PrimaryButton>
               </form>
             ) : null}
 
+            {/* STEP 2 OTP (signup only) */}
             {step === 2 ? (
               <form onSubmit={verifyOtp} className="space-y-5">
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -958,7 +1011,7 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                       : "Envoyer OTP"}
                   </PrimaryButton>
                   <GhostButton type="button" onClick={() => setStep(1)}>
-                    Changer de numéro
+                    Retour Profil
                   </GhostButton>
                 </div>
 
@@ -970,6 +1023,7 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
               </form>
             ) : null}
 
+            {/* STEP 3 */}
             {step === 3 ? (
               <form onSubmit={onConfirm} className="space-y-5">
                 <div className="grid gap-4 md:grid-cols-3">
@@ -1100,39 +1154,15 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                   </Field>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <label className="flex gap-3">
-                    <input
-                      type="checkbox"
-                      checked={pay.accepted}
-                      onChange={(e) =>
-                        setPay((p) => ({ ...p, accepted: e.target.checked }))
-                      }
-                      className="mt-1 h-4 w-4 rounded border-white/20 bg-white/10 text-emerald-400 focus:ring-emerald-400/20"
-                    />
-                    <div>
-                      <div className="text-sm font-extrabold text-white/90">
-                        J’accepte les conditions d’utilisation
-                      </div>
-                      <div className="mt-1 text-xs text-white/55">
-                        Ex : après confirmation, la cotisation suit les règles
-                        du service.
-                      </div>
-                      {errors.accepted ? (
-                        <div className="mt-2 text-xs font-semibold text-red-300">
-                          {errors.accepted}
-                        </div>
-                      ) : null}
-                    </div>
-                  </label>
-                </div>
-
                 <div className="grid gap-3 md:grid-cols-2">
                   <PrimaryButton type="submit" loading={loading}>
                     Confirmer
                   </PrimaryButton>
-                  <GhostButton type="button" onClick={() => setStep(2)}>
-                    Retour OTP
+                  <GhostButton
+                    type="button"
+                    onClick={() => setStep(initialUser ? 1 : 2)}
+                  >
+                    Retour
                   </GhostButton>
                 </div>
               </form>
@@ -1178,10 +1208,16 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                       {register.address || "-"}
                     </span>
                   </div>
+                  <div>
+                    <span className="text-white/50">Conditions:</span>{" "}
+                    <span className="font-semibold">
+                      {register.accepted ? "Acceptées ✅" : "Non"}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* OTP block with demo + copy */}
+              {/* OTP block: shown as demo only when signup */}
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-bold text-white/50">OTP</div>
@@ -1190,72 +1226,83 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
                   </span>
                 </div>
 
-                <div className="mt-2 flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "h-2.5 w-2.5 rounded-full",
-                      otp.verified
-                        ? "bg-emerald-400"
-                        : otp.sent
-                          ? "bg-cyan-300"
-                          : "bg-yellow-300",
-                    )}
-                  />
-                  <span className="text-sm font-semibold text-white/80">
-                    {otp.verified
-                      ? "Vérifié ✅"
-                      : otp.sent
-                        ? "Envoyé (en attente)"
-                        : "Non envoyé"}
-                  </span>
-                </div>
-
-                <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
-                  <div className="text-[11px] font-bold text-white/45">
-                    Code OTP (exemple)
+                {initialUser ? (
+                  <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/55">
+                    Client connecté : OTP non requis ✅ (utilisé uniquement à
+                    l’inscription).
                   </div>
-
-                  <div className="mt-2 flex items-center justify-between gap-2">
-                    <div className="text-lg font-black tracking-widest text-white/90">
-                      {otp.sent ? otp.serverCode : "— — — — — —"}
+                ) : (
+                  <>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "h-2.5 w-2.5 rounded-full",
+                          otp.verified
+                            ? "bg-emerald-400"
+                            : otp.sent
+                              ? "bg-cyan-300"
+                              : "bg-yellow-300",
+                        )}
+                      />
+                      <span className="text-sm font-semibold text-white/80">
+                        {otp.verified
+                          ? "Vérifié ✅"
+                          : otp.sent
+                            ? "Envoyé (en attente)"
+                            : "Non envoyé"}
+                      </span>
                     </div>
 
-                    <button
-                      type="button"
-                      disabled={!otp.sent}
-                      onClick={async () => {
-                        try {
-                          if (!otp.sent) return;
-                          await navigator.clipboard.writeText(otp.serverCode);
-                          showToast("OTP copié ✅ (demo)", "success");
-                        } catch {
-                          showToast(
-                            "Impossible de copier (navigateur).",
-                            "error",
-                          );
-                        }
-                      }}
-                      className={cn(
-                        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-extrabold transition",
-                        otp.sent
-                          ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/15"
-                          : "border-white/10 bg-white/5 text-white/40 cursor-not-allowed",
-                      )}
-                    >
-                      <span className="leading-none">📋</span>
-                      <span>Copier (demo)</span>
-                    </button>
-                  </div>
+                    <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="text-[11px] font-bold text-white/45">
+                        Code OTP (exemple)
+                      </div>
 
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-white/40">
-                    <span>
-                      * En production : le code ne sera jamais affiché ici.
-                    </span>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-extrabold text-white/45">
-                      demo only
-                    </span>
-                  </div>
-                </div>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <div className="text-lg font-black tracking-widest text-white/90">
+                          {otp.sent ? otp.serverCode : "— — — — — —"}
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={!otp.sent}
+                          onClick={async () => {
+                            try {
+                              if (!otp.sent) return;
+                              await navigator.clipboard.writeText(
+                                otp.serverCode,
+                              );
+                              showToast("OTP copié ✅ (demo)", "success");
+                            } catch {
+                              showToast(
+                                "Impossible de copier (navigateur).",
+                                "error",
+                              );
+                            }
+                          }}
+                          className={cn(
+                            "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-extrabold transition",
+                            otp.sent
+                              ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/15"
+                              : "border-white/10 bg-white/5 text-white/40 cursor-not-allowed",
+                          )}
+                        >
+                          <span className="leading-none">📋</span>
+                          <span>Copier (demo)</span>
+                        </button>
+                      </div>
+
+                      <div className="mt-2 flex items-center justify-between text-[11px] text-white/40">
+                        <span>
+                          * En production : le code ne sera jamais affiché ici.
+                        </span>
+                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-extrabold text-white/45">
+                          demo only
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -1325,7 +1372,8 @@ function ClientOnboardingPage({ initialUser, banks, onDone, onGoLogin }) {
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-xs text-white/50 backdrop-blur-xl">
-            VIP UX : OTP demo + multi-pays + multi-devise + résumé live
+            Conditions à l’inscription + OTP uniquement pour signup = UX plus
+            logique & plus rapide pour clients connectés.
           </div>
         </div>
       </div>
@@ -1400,6 +1448,7 @@ function AdminDashboardPage({ users, cotisations, banks }) {
                 <th className="py-3 pr-4">Devise</th>
                 <th className="py-3 pr-4">Total</th>
                 <th className="py-3 pr-4">OTP</th>
+                <th className="py-3 pr-4">Conditions</th>
                 <th className="py-3 pr-4">Statut</th>
               </tr>
             </thead>
@@ -1428,10 +1477,22 @@ function AdminDashboardPage({ users, cotisations, banks }) {
                         "inline-flex rounded-full border px-2.5 py-1 text-xs font-black",
                         c.otpVerified
                           ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
-                          : "border-yellow-300/20 bg-yellow-500/10 text-yellow-100",
+                          : "border-white/10 bg-white/5 text-white/60",
                       )}
                     >
-                      {c.otpVerified ? "OK" : "NO"}
+                      {c.otpVerified ? "OK" : "SKIP"}
+                    </span>
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full border px-2.5 py-1 text-xs font-black",
+                        c.conditionsAccepted
+                          ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+                          : "border-red-400/20 bg-red-500/10 text-red-100",
+                      )}
+                    >
+                      {c.conditionsAccepted ? "OK" : "NO"}
                     </span>
                   </td>
                   <td className="py-3 pr-4">
@@ -1450,7 +1511,7 @@ function AdminDashboardPage({ users, cotisations, banks }) {
               ))}
               {enriched.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-6 text-center text-white/50">
+                  <td colSpan={9} className="py-6 text-center text-white/50">
                     Aucune cotisation pour le moment.
                   </td>
                 </tr>
