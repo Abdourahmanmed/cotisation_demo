@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Card from "../components/ui/Card";
 import Brand from "../components/Brand";
 import Input from "../components/ui/Input";
