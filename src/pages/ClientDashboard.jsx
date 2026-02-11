@@ -3,7 +3,7 @@ import Card from "../components/ui/Card";
 import Brand from "../components/Brand";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
-import { PrimaryButton, GhostButton } from "../components/ui/Button";
+import { PrimaryButton } from "../components/ui/Button";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -29,19 +29,16 @@ const WALLET_PROVIDERS = [
 
 export default function ClientDashboard() {
   const { user, logout } = useAuth();
-  useEffect(() => {
-    const list = BANKS_BY_COUNTRY[bankCountry] || [];
-    if (!list.includes(bankName)) {
-      setBankName(list[0] || "");
-    }
-  }, [bankCountry]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // =========================
+  // STATE
+  // =========================
   const [bankCountry, setBankCountry] = useState("Djibouti");
   const [bankName, setBankName] = useState("Salaam Bank");
   const [currency, setCurrency] = useState("DJF");
 
   const [paymentMethod, setPaymentMethod] = useState("WALLET"); // WALLET | BANK_TRANSFER
-  const [mode, setMode] = useState("MANUAL");
+  const [mode, setMode] = useState("MANUAL"); // AUTOMATIC | MANUAL
   const [accountNumber, setAccountNumber] = useState("");
 
   const [walletProvider, setWalletProvider] = useState("WAAFI");
@@ -50,20 +47,41 @@ export default function ClientDashboard() {
   const [amount, setAmount] = useState("6000");
   const [frequency, setFrequency] = useState("MONTHLY");
 
+  // =========================
+  // DERIVED
+  // =========================
   const isDjibouti = useMemo(
     () => bankCountry.trim().toLowerCase() === "djibouti",
     [bankCountry],
   );
+
   const countries = useMemo(() => Object.keys(BANKS_BY_COUNTRY), []);
+  const banksForCountry = useMemo(
+    () => BANKS_BY_COUNTRY[bankCountry] || [],
+    [bankCountry],
+  );
 
-  const banksForCountry = useMemo(() => {
-    return BANKS_BY_COUNTRY[bankCountry] || [];
-  }, [bankCountry]);
+  // =========================
+  // EFFECTS (important)
+  // =========================
+  // 1) Si le pays change et la banque n'est plus valide => reset banque
+  useEffect(() => {
+    const list = BANKS_BY_COUNTRY[bankCountry] || [];
+    if (!list.includes(bankName)) {
+      setBankName(list[0] || "");
+    }
+  }, [bankCountry, bankName]);
 
-  // quand le pays change, si la banque actuelle n'existe pas dans la liste, on reset
-  // (met ça dans un useEffect)
+  // 2) Si wallet est choisi mais pays != Djibouti => switch auto en virement
+  useEffect(() => {
+    if (!isDjibouti && paymentMethod === "WALLET") {
+      setPaymentMethod("BANK_TRANSFER");
+    }
+  }, [isDjibouti, paymentMethod]);
 
-  // list subs
+  // =========================
+  // QUERIES
+  // =========================
   const q = useQuery({
     queryKey: ["my-subs"],
     queryFn: listSubscriptionsApi,
@@ -89,6 +107,9 @@ export default function ClientDashboard() {
       toast.error(err?.response?.data?.message || "Erreur consentement"),
   });
 
+  // =========================
+  // SUBMIT
+  // =========================
   function onSubmit(e) {
     e.preventDefault();
 
@@ -102,13 +123,15 @@ export default function ClientDashboard() {
     };
 
     if (paymentMethod === "BANK_TRANSFER") {
+      if (!accountNumber.trim()) return toast.error("Numéro de compte requis.");
       payload.mode = mode;
-      payload.accountNumber = accountNumber;
+      payload.accountNumber = accountNumber.trim();
     } else {
       if (!isDjibouti)
         return toast.error("Wallet disponible uniquement pour Djibouti.");
+      if (!walletAccount.trim()) return toast.error("Numéro wallet requis.");
       payload.walletProvider = walletProvider;
-      payload.walletAccount = walletAccount;
+      payload.walletAccount = walletAccount.trim();
     }
 
     createM.mutate(payload);
@@ -134,6 +157,7 @@ export default function ClientDashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
+        {/* FORM */}
         <Card className="p-7 lg:col-span-7">
           <div className="text-xl font-black">Créer une cotisation</div>
           <div className="mt-1 text-sm text-white/55">
@@ -141,6 +165,7 @@ export default function ClientDashboard() {
           </div>
 
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
+            {/* Currency + PaymentMethod */}
             <div className="grid gap-4 md:grid-cols-2">
               <Select
                 value={currency}
@@ -174,38 +199,37 @@ export default function ClientDashboard() {
               </Select>
             </div>
 
+            {/* BANK TRANSFER */}
             {paymentMethod === "BANK_TRANSFER" ? (
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Select
-                    value={bankCountry}
-                    onChange={(e) => setBankCountry(e.target.value)}
-                  >
-                    {countries.map((c) => (
-                      <option key={c} value={c} className="bg-slate-900">
-                        {c}
-                      </option>
-                    ))}
-                  </Select>
+                <Select
+                  value={bankCountry}
+                  onChange={(e) => setBankCountry(e.target.value)}
+                >
+                  {countries.map((c) => (
+                    <option key={c} value={c} className="bg-slate-900">
+                      {c}
+                    </option>
+                  ))}
+                </Select>
 
-                  <Select
-                    value={bankName}
-                    onChange={(e) => setBankName(e.target.value)}
-                    disabled={!banksForCountry.length}
-                  >
-                    {banksForCountry.length ? (
-                      banksForCountry.map((b) => (
-                        <option key={b} value={b} className="bg-slate-900">
-                          {b}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" className="bg-slate-900">
-                        -- Choisir un pays --
+                <Select
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  disabled={!banksForCountry.length}
+                >
+                  {banksForCountry.length ? (
+                    banksForCountry.map((b) => (
+                      <option key={b} value={b} className="bg-slate-900">
+                        {b}
                       </option>
-                    )}
-                  </Select>
-                </div>
+                    ))
+                  ) : (
+                    <option value="" className="bg-slate-900">
+                      -- Choisir un pays --
+                    </option>
+                  )}
+                </Select>
 
                 <Select value={mode} onChange={(e) => setMode(e.target.value)}>
                   <option value="AUTOMATIC" className="bg-slate-900">
@@ -215,6 +239,7 @@ export default function ClientDashboard() {
                     MANUAL
                   </option>
                 </Select>
+
                 <Input
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
@@ -222,6 +247,7 @@ export default function ClientDashboard() {
                 />
               </div>
             ) : (
+              /* WALLET */
               <div className="grid gap-4 md:grid-cols-2">
                 <Select
                   value={walletProvider}
@@ -233,6 +259,7 @@ export default function ClientDashboard() {
                     </option>
                   ))}
                 </Select>
+
                 <Input
                   value={walletAccount}
                   onChange={(e) => setWalletAccount(e.target.value)}
@@ -241,6 +268,7 @@ export default function ClientDashboard() {
               </div>
             )}
 
+            {/* Amount + Frequency */}
             <div className="grid gap-4 md:grid-cols-2">
               <Input
                 value={amount}
@@ -248,6 +276,7 @@ export default function ClientDashboard() {
                 placeholder="Montant"
                 inputMode="numeric"
               />
+
               <Select
                 value={frequency}
                 onChange={(e) => setFrequency(e.target.value)}
@@ -273,6 +302,7 @@ export default function ClientDashboard() {
           </form>
         </Card>
 
+        {/* LIST */}
         <Card className="p-7 lg:col-span-5">
           <div className="flex items-center justify-between">
             <div className="text-sm font-black">Mes cotisations</div>
@@ -296,9 +326,11 @@ export default function ClientDashboard() {
                     </div>
                     <div className="text-xs text-white/50">{s.status}</div>
                   </div>
+
                   <div className="mt-2 text-xs text-white/60">
                     {s.bankCountry} • {s.bankName} • {s.currency}
                   </div>
+
                   <div className="mt-2 text-sm font-black text-emerald-200">
                     {s.amount} {s.currency} • {s.frequency}
                   </div>
