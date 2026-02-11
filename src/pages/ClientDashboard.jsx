@@ -13,6 +13,12 @@ import {
   consentApi,
 } from "../api/subscriptions.api";
 
+const BANKS_BY_COUNTRY = {
+  Djibouti: ["Salaam Bank", "EXIM Bank", "BCIMR", "BRED", "CAC Bank"],
+  Ethiopie: ["Commercial Bank of Ethiopia", "Dashen Bank", "Awash Bank"],
+  France: ["BNP Paribas", "Société Générale", "Crédit Agricole", "Boursorama"],
+};
+
 const WALLET_PROVIDERS = [
   { id: "WAAFI", label: "Waafi" },
   { id: "CAC_PAY", label: "CAC Pay" },
@@ -23,6 +29,12 @@ const WALLET_PROVIDERS = [
 
 export default function ClientDashboard() {
   const { user, logout } = useAuth();
+  useEffect(() => {
+    const list = BANKS_BY_COUNTRY[bankCountry] || [];
+    if (!list.includes(bankName)) {
+      setBankName(list[0] || "");
+    }
+  }, [bankCountry]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [bankCountry, setBankCountry] = useState("Djibouti");
   const [bankName, setBankName] = useState("Salaam Bank");
@@ -42,6 +54,14 @@ export default function ClientDashboard() {
     () => bankCountry.trim().toLowerCase() === "djibouti",
     [bankCountry],
   );
+  const countries = useMemo(() => Object.keys(BANKS_BY_COUNTRY), []);
+
+  const banksForCountry = useMemo(() => {
+    return BANKS_BY_COUNTRY[bankCountry] || [];
+  }, [bankCountry]);
+
+  // quand le pays change, si la banque actuelle n'existe pas dans la liste, on reset
+  // (met ça dans un useEffect)
 
   // list subs
   const q = useQuery({
@@ -122,19 +142,6 @@ export default function ClientDashboard() {
 
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <Input
-                value={bankCountry}
-                onChange={(e) => setBankCountry(e.target.value)}
-                placeholder="Pays banque"
-              />
-              <Input
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-                placeholder="Banque"
-              />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
               <Select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
@@ -169,6 +176,37 @@ export default function ClientDashboard() {
 
             {paymentMethod === "BANK_TRANSFER" ? (
               <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Select
+                    value={bankCountry}
+                    onChange={(e) => setBankCountry(e.target.value)}
+                  >
+                    {countries.map((c) => (
+                      <option key={c} value={c} className="bg-slate-900">
+                        {c}
+                      </option>
+                    ))}
+                  </Select>
+
+                  <Select
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    disabled={!banksForCountry.length}
+                  >
+                    {banksForCountry.length ? (
+                      banksForCountry.map((b) => (
+                        <option key={b} value={b} className="bg-slate-900">
+                          {b}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" className="bg-slate-900">
+                        -- Choisir un pays --
+                      </option>
+                    )}
+                  </Select>
+                </div>
+
                 <Select value={mode} onChange={(e) => setMode(e.target.value)}>
                   <option value="AUTOMATIC" className="bg-slate-900">
                     AUTOMATIC
