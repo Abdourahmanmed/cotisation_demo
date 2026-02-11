@@ -38,104 +38,104 @@ function Feature({ title, desc }) {
   );
 }
 
-function PreviewClient() {
-  return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-black text-white/85">Dashboard Client</div>
-        <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-white/60">
-          Profil • OTP • Cotisation
-        </span>
-      </div>
+// function PreviewClient() {
+//   return (
+//     <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+//       <div className="flex items-center justify-between">
+//         <div className="text-sm font-black text-white/85">Dashboard Client</div>
+//         <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-white/60">
+//           Profil • OTP • Cotisation
+//         </span>
+//       </div>
 
-      <div className="mt-4 grid gap-3">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="text-xs font-bold text-white/55">Statut</div>
-          <div className="mt-2 flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-yellow-300" />
-            <div className="text-sm font-semibold text-white/85">
-              En attente de consentement
-            </div>
-          </div>
-        </div>
+//       <div className="mt-4 grid gap-3">
+//         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+//           <div className="text-xs font-bold text-white/55">Statut</div>
+//           <div className="mt-2 flex items-center gap-2">
+//             <span className="h-2.5 w-2.5 rounded-full bg-yellow-300" />
+//             <div className="text-sm font-semibold text-white/85">
+//               En attente de consentement
+//             </div>
+//           </div>
+//         </div>
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <StatPill label="Méthode" value="Wallet (Djibouti)" />
-          <StatPill label="Fréquence" value="Mensuelle" />
-        </div>
+//         <div className="grid gap-3 md:grid-cols-2">
+//           <StatPill label="Méthode" value="Wallet (Djibouti)" />
+//           <StatPill label="Fréquence" value="Mensuelle" />
+//         </div>
 
-        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4">
-          <div className="text-xs font-bold text-emerald-100/80">
-            Montant à cotiser
-          </div>
-          <div className="mt-1 text-xl font-black text-emerald-50">
-            6,000 DJF
-          </div>
-          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
-            <div className="h-full w-[64%] rounded-full bg-gradient-to-r from-emerald-400 to-lime-300" />
-          </div>
-          <div className="mt-2 text-xs text-emerald-100/70">
-            Progression du processus • Exemple
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+//         <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4">
+//           <div className="text-xs font-bold text-emerald-100/80">
+//             Montant à cotiser
+//           </div>
+//           <div className="mt-1 text-xl font-black text-emerald-50">
+//             6,000 DJF
+//           </div>
+//           <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
+//             <div className="h-full w-[64%] rounded-full bg-gradient-to-r from-emerald-400 to-lime-300" />
+//           </div>
+//           <div className="mt-2 text-xs text-emerald-100/70">
+//             Progression du processus • Exemple
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
-function PreviewAdmin() {
-  return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-black text-white/85">Dashboard Admin</div>
-        <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-white/60">
-          Stats • Actions • Audit
-        </span>
-      </div>
+// function PreviewAdmin() {
+//   return (
+//     <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+//       <div className="flex items-center justify-between">
+//         <div className="text-sm font-black text-white/85">Dashboard Admin</div>
+//         <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-white/60">
+//           Stats • Actions • Audit
+//         </span>
+//       </div>
 
-      <div className="mt-4 grid gap-3">
-        <div className="grid gap-3 md:grid-cols-3">
-          <StatPill label="Total clients" value="124" />
-          <StatPill label="Actifs" value="86" />
-          <StatPill label="Cotisations" value="97" />
-        </div>
+//       <div className="mt-4 grid gap-3">
+//         <div className="grid gap-3 md:grid-cols-3">
+//           <StatPill label="Total clients" value="124" />
+//           <StatPill label="Actifs" value="86" />
+//           <StatPill label="Cotisations" value="97" />
+//         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="text-xs font-bold text-white/55">Dernières actions</div>
-          <div className="mt-3 space-y-2 text-sm text-white/70">
-            <div className="flex items-center justify-between">
-              <span>✅ Consentement forcé</span>
-              <span className="text-xs text-white/45">il y a 2 min</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>🟡 User status → ACTIVE</span>
-              <span className="text-xs text-white/45">il y a 12 min</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>🔒 Reset OTP security</span>
-              <span className="text-xs text-white/45">il y a 41 min</span>
-            </div>
-          </div>
-        </div>
+//         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+//           <div className="text-xs font-bold text-white/55">Dernières actions</div>
+//           <div className="mt-3 space-y-2 text-sm text-white/70">
+//             <div className="flex items-center justify-between">
+//               <span>✅ Consentement forcé</span>
+//               <span className="text-xs text-white/45">il y a 2 min</span>
+//             </div>
+//             <div className="flex items-center justify-between">
+//               <span>🟡 User status → ACTIVE</span>
+//               <span className="text-xs text-white/45">il y a 12 min</span>
+//             </div>
+//             <div className="flex items-center justify-between">
+//               <span>🔒 Reset OTP security</span>
+//               <span className="text-xs text-white/45">il y a 41 min</span>
+//             </div>
+//           </div>
+//         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="flex items-center justify-between">
-            <div className="text-xs font-bold text-white/55">Audit (aperçu)</div>
-            <span className="text-[11px] font-bold text-white/45">
-              Traçabilité
-            </span>
-          </div>
-          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/10">
-            <div className="h-full w-[78%] rounded-full bg-gradient-to-r from-cyan-300 to-emerald-400" />
-          </div>
-          <div className="mt-2 text-xs text-white/50">
-            Exemples de logs • IP • user-agent • actions
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+//         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+//           <div className="flex items-center justify-between">
+//             <div className="text-xs font-bold text-white/55">Audit (aperçu)</div>
+//             <span className="text-[11px] font-bold text-white/45">
+//               Traçabilité
+//             </span>
+//           </div>
+//           <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/10">
+//             <div className="h-full w-[78%] rounded-full bg-gradient-to-r from-cyan-300 to-emerald-400" />
+//           </div>
+//           <div className="mt-2 text-xs text-white/50">
+//             Exemples de logs • IP • user-agent • actions
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 export default function Home() {
   return (
@@ -199,11 +199,11 @@ export default function Home() {
                 </Link>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
+              {/* <div className="grid gap-3 sm:grid-cols-3">
                 <StatPill label="Sécurité" value="OTP + Audit" />
                 <StatPill label="Paiement" value="Wallet / Virement" />
                 <StatPill label="Admin" value="Actions + Logs" />
-              </div>
+              </div> */}
             </motion.div>
 
             {/* Center image */}
@@ -239,7 +239,7 @@ export default function Home() {
           </div>
 
           {/* Bottom strip */}
-          <div className="border-t border-white/10 bg-white/5 px-7 py-5">
+          {/* <div className="border-t border-white/10 bg-white/5 px-7 py-5">
             <div className="grid gap-3 md:grid-cols-3">
               <Feature
                 title="Inscription & documents"
@@ -254,10 +254,10 @@ export default function Home() {
                 desc="Stats, liste clients/cotisations, suspend, cancel, force consent, audit logs."
               />
             </div>
-          </div>
+          </div> */}
         </Card>
 
-        {/* PREVIEWS */}
+        {/* PREVIEWS
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <motion.div initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
             <PreviewClient />
@@ -265,7 +265,7 @@ export default function Home() {
           <motion.div initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.05 }}>
             <PreviewAdmin />
           </motion.div>
-        </div>
+        </div> */}
 
         <div className="mt-8 text-center text-xs text-white/35">
           © Cotisations Xeer Ciise • UI/UX VIP • React + Tailwind
