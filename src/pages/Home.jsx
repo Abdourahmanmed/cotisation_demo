@@ -40,7 +40,7 @@ export default function Home() {
           <div className="hidden text-xs text-white/50 md:block">
             {t("demo")}
           </div>
-          {/* <LanguageSwitcher /> */}
+          <LanguageSwitcher />
         </div>
 
         {/* HERO */}
