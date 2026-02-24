@@ -8,8 +8,8 @@ import Badge from "../components/ui/Badge";
 import SectionTitle from "../components/ui/SectionTitle";
 import Input from "../components/ui/Input";
 import Select from "../components/ui/Select";
-import { PrimaryButton, GhostButton } from "../components/ui/Button";
 import Drawer from "../components/ui/Drawer";
+import { useTranslation } from "react-i18next";
 
 import {
   getAdminDashboard,
@@ -36,6 +36,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 const USER_STATUS_TONES = {
   PENDING_VERIFICATION: "yellow",
@@ -84,6 +85,7 @@ function SoftKpi({ label, value }) {
 }
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
 
   // Tabs
@@ -214,53 +216,58 @@ export default function AdminDashboard() {
   const mUserStatus = useMutation({
     mutationFn: ({ userId, status }) => patchUserStatus(userId, status),
     onSuccess: () => {
-      toast.success("Statut utilisateur mis à jour ✅");
+      toast.success(t("admin_user_status_updated"));
       qUsers.refetch();
       if (selectedUserId) qUserDetails.refetch();
     },
-    onError: (err) => toast.error(err?.response?.data?.message || "Erreur"),
+    onError: (err) =>
+      toast.error(err?.response?.data?.message || t("error_generic")),
   });
 
   const mUserRole = useMutation({
     mutationFn: ({ userId, role }) => patchUserRole(userId, role),
     onSuccess: () => {
-      toast.success("Rôle mis à jour ✅");
+      toast.success(t("admin_role_updated"));
       qUsers.refetch();
       if (selectedUserId) qUserDetails.refetch();
     },
-    onError: (err) => toast.error(err?.response?.data?.message || "Erreur"),
+    onError: (err) =>
+      toast.error(err?.response?.data?.message || t("error_generic")),
   });
 
   const mResetOtp = useMutation({
     mutationFn: (userId) => resetUserOtp(userId),
     onSuccess: () => {
-      toast.success("Sécurité OTP réinitialisée ✅");
+      toast.success(t("admin_otp_reset_ok"));
       qUsers.refetch();
       if (selectedUserId) qUserDetails.refetch();
     },
-    onError: (err) => toast.error(err?.response?.data?.message || "Erreur"),
+    onError: (err) =>
+      toast.error(err?.response?.data?.message || t("error_generic")),
   });
 
   const mSubStatus = useMutation({
     mutationFn: ({ subscriptionId, status }) =>
       patchSubscriptionStatus(subscriptionId, status),
     onSuccess: () => {
-      toast.success("Statut cotisation mis à jour ✅");
+      toast.success(t("admin_sub_status_updated"));
       qSubs.refetch();
       if (selectedUserId) qUserDetails.refetch();
     },
-    onError: (err) => toast.error(err?.response?.data?.message || "Erreur"),
+    onError: (err) =>
+      toast.error(err?.response?.data?.message || t("error_generic")),
   });
 
   const mForceConsent = useMutation({
     mutationFn: ({ subscriptionId, consentVersion }) =>
       forceSubscriptionConsent(subscriptionId, consentVersion),
     onSuccess: () => {
-      toast.success("Consentement forcé ✅");
+      toast.success(t("admin_consent_forced"));
       qSubs.refetch();
       if (selectedUserId) qUserDetails.refetch();
     },
-    onError: (err) => toast.error(err?.response?.data?.message || "Erreur"),
+    onError: (err) =>
+      toast.error(err?.response?.data?.message || t("error_generic")),
   });
 
   const auditTotal = qAudit.data?.total ?? 0;
@@ -273,6 +280,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <Brand />
+        <LanguageSwitcher />
         <div className="flex items-center gap-3">
           <div className="hidden text-xs text-white/60 md:block">
             {user?.fullName} • <span className="font-bold">{user?.role}</span>
@@ -281,7 +289,7 @@ export default function AdminDashboard() {
             onClick={logout}
             className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white/80 hover:bg-white/10"
           >
-            Déconnexion
+            {t("logout")}
           </button>
         </div>
       </div>
@@ -289,22 +297,22 @@ export default function AdminDashboard() {
       {/* Tabs */}
       <div className="flex flex-wrap gap-2">
         {[
-          { id: "overview", label: "Vue d’ensemble" },
-          { id: "users", label: "Clients" },
-          { id: "subscriptions", label: "Cotisations" },
-          { id: "audit", label: "Audit" },
-        ].map((t) => (
+          { id: "overview", label: t("admin_overview") },
+          { id: "users", label: t("admin_clients") },
+          { id: "subscriptions", label: t("admin_subscriptions") },
+          { id: "audit", label: t("admin_audit") },
+        ].map((tt) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
+            key={tt.id}
+            onClick={() => setTab(tt.id)}
             className={[
               "rounded-full border px-4 py-2 text-xs font-black transition",
-              tab === t.id
+              tab === tt.id
                 ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-100"
                 : "border-white/10 bg-white/5 text-white/75 hover:bg-white/10",
             ].join(" ")}
           >
-            {t.label}
+            {tt.label}
           </button>
         ))}
       </div>
@@ -314,27 +322,30 @@ export default function AdminDashboard() {
         <div className="grid gap-6 lg:grid-cols-12">
           <Card className="p-7 lg:col-span-7">
             <SectionTitle
-              title="KPI"
-              subtitle="Statistiques clés (temps réel)"
+              title={t("admin_kpi")}
+              subtitle={t("admin_kpi_sub")}
               right={
                 <div className="text-xs text-white/45">
-                  {qStats.isLoading ? "Chargement…" : "OK"}
+                  {qStats.isLoading ? t("loading") : "OK"}
                 </div>
               }
             />
 
             <div className="mt-5 grid gap-3 md:grid-cols-2">
-              <StatCard label="Total utilisateurs" value={stats?.totalUsers} />
               <StatCard
-                label="Utilisateurs actifs"
+                label={t("admin_total_users")}
+                value={stats?.totalUsers}
+              />
+              <StatCard
+                label={t("admin_active_users")}
                 value={stats?.activeUsers}
               />
               <StatCard
-                label="Total cotisations"
+                label={t("admin_total_subs")}
                 value={stats?.totalSubscriptions}
               />
               <StatCard
-                label="Cotisations actives"
+                label={t("admin_active_subs")}
                 value={stats?.activeSubscriptions}
                 hint="ACTIVE + ACTIVE_MANUAL"
               />
@@ -343,7 +354,7 @@ export default function AdminDashboard() {
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="text-xs font-black text-white/60">
-                  Users par statut
+                  {t("admin_users_by_status")}
                 </div>
                 <div className="mt-3 h-56">
                   <ResponsiveContainer width="100%" height="100%">
@@ -364,7 +375,7 @@ export default function AdminDashboard() {
 
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="text-xs font-black text-white/60">
-                  Cotisations par statut
+                  {t("admin_subs_by_status")}
                 </div>
                 <div className="mt-3 h-56">
                   <ResponsiveContainer width="100%" height="100%">
@@ -389,8 +400,8 @@ export default function AdminDashboard() {
 
           <Card className="p-7 lg:col-span-5">
             <SectionTitle
-              title="Répartition méthodes paiement"
-              subtitle="WALLET vs BANK_TRANSFER"
+              title={t("admin_payment_split")}
+              subtitle={t("admin_payment_split_sub")}
             />
             <div className="mt-4 h-64 rounded-2xl border border-white/10 bg-white/5 p-4">
               <ResponsiveContainer width="100%" height="100%">
@@ -409,7 +420,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/55">
-              Astuce: PENDING_CONSENT → ACTIVE après consentement.
+              {t("admin_tip_pending")}
             </div>
           </Card>
         </div>
@@ -419,14 +430,14 @@ export default function AdminDashboard() {
       {tab === "users" ? (
         <Card className="p-7">
           <SectionTitle
-            title="Clients"
-            subtitle="Recherche + actions (statut / rôle / reset OTP) • Cliquez sur une ligne pour détails"
+            title={t("admin_clients_title")}
+            subtitle={t("admin_clients_sub")}
             right={
               <div className="w-72">
                 <Input
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
-                  placeholder="Rechercher (nom, email, phone...)"
+                  placeholder={t("admin_search_user")}
                 />
               </div>
             }
@@ -434,19 +445,21 @@ export default function AdminDashboard() {
 
           <div className="mt-5 overflow-hidden rounded-2xl border border-white/10">
             <div className="grid grid-cols-12 gap-2 bg-white/5 px-4 py-3 text-xs font-black text-white/60">
-              <div className="col-span-3">Client</div>
-              <div className="col-span-2">Téléphone</div>
-              <div className="col-span-2">Pays/Ville</div>
-              <div className="col-span-2">Rôle</div>
-              <div className="col-span-1">Statut</div>
-              <div className="col-span-2 text-right">Actions</div>
+              <div className="col-span-3">{t("client")}</div>
+              <div className="col-span-2">{t("phone")}</div>
+              <div className="col-span-2">{t("country_city")}</div>
+              <div className="col-span-2">{t("role")}</div>
+              <div className="col-span-1">{t("status")}</div>
+              <div className="col-span-2 text-right">{t("actions")}</div>
             </div>
 
             {qUsers.isLoading ? (
-              <div className="px-4 py-6 text-sm text-white/60">Chargement…</div>
+              <div className="px-4 py-6 text-sm text-white/60">
+                {t("loading")}
+              </div>
             ) : usersFiltered.length === 0 ? (
               <div className="px-4 py-6 text-sm text-white/60">
-                Aucun résultat.
+                {t("no_results")}
               </div>
             ) : (
               usersFiltered.map((u) => (
@@ -458,7 +471,7 @@ export default function AdminDashboard() {
                     type="button"
                     onClick={() => setSelectedUserId(u.id)}
                     className="col-span-3 text-left"
-                    title="Voir détails"
+                    title={t("admin_user_details")}
                   >
                     <div className="font-extrabold text-white/90">
                       {u.fullName}
@@ -536,15 +549,15 @@ export default function AdminDashboard() {
       {tab === "subscriptions" ? (
         <Card className="p-7">
           <SectionTitle
-            title="Cotisations"
-            subtitle="Filtre + actions (status / force consent)"
+            title={t("admin_subs_title")}
+            subtitle={t("admin_subs_sub")}
             right={
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="w-72">
                   <Input
                     value={subSearch}
                     onChange={(e) => setSubSearch(e.target.value)}
-                    placeholder="Rechercher (client, banque, wallet...)"
+                    placeholder={t("admin_search_sub")}
                   />
                 </div>
                 <div className="w-56">
@@ -553,7 +566,7 @@ export default function AdminDashboard() {
                     onChange={(e) => setSubStatus(e.target.value)}
                   >
                     <option value="ALL" className="bg-slate-900">
-                      Tous
+                      {t("admin_all")}
                     </option>
                     {[
                       "DRAFT",
@@ -574,18 +587,20 @@ export default function AdminDashboard() {
 
           <div className="mt-5 overflow-hidden rounded-2xl border border-white/10">
             <div className="grid grid-cols-12 gap-2 bg-white/5 px-4 py-3 text-xs font-black text-white/60">
-              <div className="col-span-3">Client</div>
-              <div className="col-span-3">Paiement</div>
-              <div className="col-span-2">Montant</div>
-              <div className="col-span-2">Statut</div>
-              <div className="col-span-2 text-right">Actions</div>
+              <div className="col-span-3">{t("client")}</div>
+              <div className="col-span-3">{t("payment")}</div>
+              <div className="col-span-2">{t("amount")}</div>
+              <div className="col-span-2">{t("status")}</div>
+              <div className="col-span-2 text-right">{t("actions")}</div>
             </div>
 
             {qSubs.isLoading ? (
-              <div className="px-4 py-6 text-sm text-white/60">Chargement…</div>
+              <div className="px-4 py-6 text-sm text-white/60">
+                {t("loading")}
+              </div>
             ) : subsFiltered.length === 0 ? (
               <div className="px-4 py-6 text-sm text-white/60">
-                Aucun résultat.
+                {t("no_results")}
               </div>
             ) : (
               subsFiltered.map((s) => (
@@ -673,14 +688,14 @@ export default function AdminDashboard() {
                         }
                         className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 hover:bg-emerald-500/15"
                       >
-                        Force
+                        {t("admin_force")}
                       </button>
                     ) : (
                       <button
                         disabled
                         className="cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white/40"
                       >
-                        OK
+                        {t("admin_ok")}
                       </button>
                     )}
                   </div>
@@ -690,8 +705,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/55">
-            “Force” met consentAccepted=true et status=ACTIVE (selon ton
-            service).
+            {t("admin_force_hint")}
           </div>
         </Card>
       ) : null}
@@ -700,14 +714,14 @@ export default function AdminDashboard() {
       {tab === "audit" ? (
         <Card className="p-7">
           <SectionTitle
-            title="Audit Logs"
-            subtitle="Traçabilité Admin (actions, IP, user-agent) — filtres + pagination"
+            title={t("admin_audit_title")}
+            subtitle={t("admin_audit_sub")}
             right={
               <button
                 onClick={() => qAudit.refetch()}
                 className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white/80 hover:bg-white/10"
               >
-                Rafraîchir
+                {t("refresh")}
               </button>
             }
           />
@@ -716,17 +730,17 @@ export default function AdminDashboard() {
             <Input
               value={auditAction}
               onChange={(e) => setAuditAction(e.target.value)}
-              placeholder="action (ex: ADMIN_...)"
+              placeholder={t("admin_action_ph")}
             />
             <Input
               value={auditEntity}
               onChange={(e) => setAuditEntity(e.target.value)}
-              placeholder="entity (User/Subscription)"
+              placeholder={t("admin_entity_ph")}
             />
             <Input
               value={auditUserId}
               onChange={(e) => setAuditUserId(e.target.value)}
-              placeholder="userId (admin)"
+              placeholder={t("admin_userid_ph")}
             />
             <Select
               value={auditLimit}
@@ -737,7 +751,7 @@ export default function AdminDashboard() {
             >
               {[10, 25, 50, 100].map((n) => (
                 <option key={n} value={n} className="bg-slate-900">
-                  {n} / page
+                  {n} {t("per_page")}
                 </option>
               ))}
             </Select>
@@ -745,7 +759,7 @@ export default function AdminDashboard() {
 
           <div className="mt-4 flex items-center justify-between gap-3">
             <div className="text-xs text-white/55">
-              Total:{" "}
+              {t("total_label")}:{" "}
               <span className="font-black text-white/80">{auditTotal}</span>
             </div>
             <div className="flex items-center gap-2">
@@ -756,31 +770,35 @@ export default function AdminDashboard() {
                 }
                 className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white/80 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                ← Précédent
+                {t("previous")}
               </button>
               <button
                 disabled={!canNext}
                 onClick={() => setAuditOffset((o) => o + auditLimit)}
                 className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white/80 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Suivant →
+                {t("next")}
               </button>
             </div>
           </div>
 
           <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
             <div className="grid grid-cols-12 gap-2 bg-white/5 px-4 py-3 text-xs font-black text-white/60">
-              <div className="col-span-3">Admin</div>
-              <div className="col-span-3">Action</div>
-              <div className="col-span-2">Entity</div>
-              <div className="col-span-2">Date</div>
-              <div className="col-span-2 text-right">IP</div>
+              <div className="col-span-3">{t("admin")}</div>
+              <div className="col-span-3">{t("admin_action")}</div>
+              <div className="col-span-2">{t("entity")}</div>
+              <div className="col-span-2">{t("date")}</div>
+              <div className="col-span-2 text-right">{t("ip")}</div>
             </div>
 
             {qAudit.isLoading ? (
-              <div className="px-4 py-6 text-sm text-white/60">Chargement…</div>
+              <div className="px-4 py-6 text-sm text-white/60">
+                {t("loading")}
+              </div>
             ) : auditItems.length === 0 ? (
-              <div className="px-4 py-6 text-sm text-white/60">Aucun log.</div>
+              <div className="px-4 py-6 text-sm text-white/60">
+                {t("no_logs")}
+              </div>
             ) : (
               auditItems.map((a) => (
                 <div
@@ -825,51 +843,51 @@ export default function AdminDashboard() {
       <Drawer
         open={!!selectedUserId}
         onClose={() => setSelectedUserId(null)}
-        title="Détails utilisateur"
+        title={t("admin_user_details")}
         subtitle={selectedUserId}
       >
         {qUserDetails.isLoading ? (
-          <div className="text-sm text-white/60">Chargement…</div>
+          <div className="text-sm text-white/60">{t("loading")}</div>
         ) : qUserDetails.isError ? (
-          <div className="text-sm text-red-200">Erreur chargement détails.</div>
+          <div className="text-sm text-red-200">{t("error_details")}</div>
         ) : (
           <>
             {(() => {
               const u = qUserDetails.data?.user;
               if (!u)
                 return (
-                  <div className="text-sm text-white/60">Aucun détail.</div>
+                  <div className="text-sm text-white/60">{t("no_details")}</div>
                 );
 
               return (
                 <div className="space-y-4">
                   <div className="grid gap-3 md:grid-cols-2">
-                    <SoftKpi label="Nom" value={u.fullName} />
-                    <SoftKpi label="Rôle" value={u.role} />
-                    <SoftKpi label="Email" value={u.email} />
-                    <SoftKpi label="Téléphone" value={u.phone} />
-                    <SoftKpi label="Pays" value={u.country} />
-                    <SoftKpi label="Ville" value={u.city} />
+                    <SoftKpi label={t("name")} value={u.fullName} />
+                    <SoftKpi label={t("role")} value={u.role} />
+                    <SoftKpi label={t("email")} value={u.email} />
+                    <SoftKpi label={t("phone")} value={u.phone} />
+                    <SoftKpi label={t("country")} value={u.country} />
+                    <SoftKpi label={t("city")} value={u.city} />
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <div className="flex items-center justify-between">
                       <div className="text-xs font-black text-white/60">
-                        Statut
+                        {t("status")}
                       </div>
                       <Badge tone={USER_STATUS_TONES[u.status] || "neutral"}>
                         {u.status}
                       </Badge>
                     </div>
                     <div className="mt-3 text-xs text-white/50">
-                      Créé: {fmtDate(u.createdAt)} • Mis à jour:{" "}
+                      {t("created")}: {fmtDate(u.createdAt)} • {t("updated")}:{" "}
                       {fmtDate(u.updatedAt)}
                     </div>
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <div className="text-xs font-black text-white/60">
-                      Cotisations
+                      {t("subscriptions")}
                     </div>
                     <div className="mt-3 space-y-2">
                       {u.subscriptions?.length ? (
@@ -898,7 +916,7 @@ export default function AdminDashboard() {
                         ))
                       ) : (
                         <div className="text-xs text-white/50">
-                          Aucune cotisation.
+                          {t("no_subs")}
                         </div>
                       )}
                     </div>
@@ -906,7 +924,7 @@ export default function AdminDashboard() {
 
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <div className="text-xs font-black text-white/60">
-                      Derniers OTP (5)
+                      {t("last_otps")}
                     </div>
                     <div className="mt-3 space-y-2">
                       {u.otps?.length ? (
@@ -924,13 +942,16 @@ export default function AdminDashboard() {
                               </div>
                             </div>
                             <div className="mt-1 text-xs text-white/55">
-                              Expires: {fmtDate(o.expiresAt)} • Attempts:{" "}
-                              {o.attempts} • Used: {o.usedAt ? "✅" : "❌"}
+                              {t("expires")}: {fmtDate(o.expiresAt)} •{" "}
+                              {t("attempts")}: {o.attempts} • {t("used")}:{" "}
+                              {o.usedAt ? "✅" : "❌"}
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="text-xs text-white/50">Aucun OTP.</div>
+                        <div className="text-xs text-white/50">
+                          {t("no_otps")}
+                        </div>
                       )}
                     </div>
                   </div>
