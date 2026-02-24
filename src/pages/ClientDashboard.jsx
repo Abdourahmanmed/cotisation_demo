@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Card from "../components/ui/Card";
 import Brand from "../components/Brand";
 import Input from "../components/ui/Input";
@@ -12,6 +13,7 @@ import {
   listSubscriptionsApi,
   consentApi,
 } from "../api/subscriptions.api";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 const BANKS_BY_COUNTRY = {
   Djibouti: ["Salaam Bank", "EXIM Bank", "BCIMR", "BRED", "CAC Bank"],
@@ -28,6 +30,7 @@ const WALLET_PROVIDERS = [
 ];
 
 export default function ClientDashboard() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
 
   // =========================
@@ -50,29 +53,33 @@ export default function ClientDashboard() {
   // =========================
   // DERIVED
   // =========================
-  const isDjibouti = useMemo(
-    () => bankCountry.trim().toLowerCase() === "djibouti",
-    [bankCountry],
-  );
-
   const countries = useMemo(() => Object.keys(BANKS_BY_COUNTRY), []);
   const banksForCountry = useMemo(
     () => BANKS_BY_COUNTRY[bankCountry] || [],
     [bankCountry],
   );
 
-  // =========================
-  // EFFECTS (important)
-  // =========================
-  // 1) Si le pays change et la banque n'est plus valide => reset banque
-  useEffect(() => {
-    const list = BANKS_BY_COUNTRY[bankCountry] || [];
-    if (!list.includes(bankName)) {
-      setBankName(list[0] || "");
-    }
-  }, [bankCountry, bankName]);
+  const isDjibouti = useMemo(
+    () => bankCountry.trim().toLowerCase() === "djibouti",
+    [bankCountry],
+  );
 
-  // 2) Si wallet est choisi mais pays != Djibouti => switch auto en virement
+  // =========================
+  // EFFECTS
+  // =========================
+  // Si pays change et banque invalide => reset banque
+  useEffect(() => {
+    if (!banksForCountry.length) {
+      setBankName("");
+      return;
+    }
+    if (!banksForCountry.includes(bankName)) {
+      setBankName(banksForCountry[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bankCountry, banksForCountry]);
+
+  // Si wallet mais pays != Djibouti => switch auto en virement
   useEffect(() => {
     if (!isDjibouti && paymentMethod === "WALLET") {
       setPaymentMethod("BANK_TRANSFER");
@@ -90,21 +97,27 @@ export default function ClientDashboard() {
   const createM = useMutation({
     mutationFn: createSubscriptionApi,
     onSuccess: () => {
-      toast.success("Cotisation créée ✅");
+      toast.success(t("sub_created", "Cotisation créée ✅"));
       q.refetch();
     },
     onError: (err) =>
-      toast.error(err?.response?.data?.message || "Erreur création"),
+      toast.error(
+        err?.response?.data?.message ||
+          t("sub_create_error", "Erreur création"),
+      ),
   });
 
   const consentM = useMutation({
     mutationFn: ({ id }) => consentApi(id, true),
     onSuccess: () => {
-      toast.success("Consentement accepté ✅");
+      toast.success(t("consent_accepted", "Consentement accepté ✅"));
       q.refetch();
     },
     onError: (err) =>
-      toast.error(err?.response?.data?.message || "Erreur consentement"),
+      toast.error(
+        err?.response?.data?.message ||
+          t("consent_error", "Erreur consentement"),
+      ),
   });
 
   // =========================
@@ -118,18 +131,26 @@ export default function ClientDashboard() {
       bankName,
       currency,
       paymentMethod,
-      amount: Number(amount),
+      amount: Number(amount || 0),
       frequency,
     };
 
+    if (!payload.amount || payload.amount <= 0) {
+      return toast.error(t("amount_required", "Montant requis."));
+    }
+
     if (paymentMethod === "BANK_TRANSFER") {
-      if (!accountNumber.trim()) return toast.error("Numéro de compte requis.");
+      if (!accountNumber.trim())
+        return toast.error(t("account_required", "Numéro de compte requis."));
       payload.mode = mode;
       payload.accountNumber = accountNumber.trim();
     } else {
       if (!isDjibouti)
-        return toast.error("Wallet disponible uniquement pour Djibouti.");
-      if (!walletAccount.trim()) return toast.error("Numéro wallet requis.");
+        return toast.error(
+          t("wallet_only_dj", "Wallet disponible uniquement pour Djibouti."),
+        );
+      if (!walletAccount.trim())
+        return toast.error(t("wallet_required", "Numéro wallet requis."));
       payload.walletProvider = walletProvider;
       payload.walletAccount = walletAccount.trim();
     }
@@ -138,11 +159,17 @@ export default function ClientDashboard() {
   }
 
   const subs = q.data?.subscriptions || [];
+  const submitDisabled =
+    createM.isPending ||
+    (paymentMethod === "BANK_TRANSFER"
+      ? !accountNumber.trim()
+      : !walletAccount.trim());
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Brand />
+        <LanguageSwitcher />
         <div className="flex items-center gap-3">
           <div className="text-xs text-white/60">
             {user?.fullName} • <span className="font-bold">{user?.role}</span>
@@ -151,7 +178,7 @@ export default function ClientDashboard() {
             onClick={logout}
             className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/80 hover:bg-white/10"
           >
-            Déconnexion
+            {t("logout", "Déconnexion")}
           </button>
         </div>
       </div>
@@ -159,9 +186,11 @@ export default function ClientDashboard() {
       <div className="grid gap-6 lg:grid-cols-12">
         {/* FORM */}
         <Card className="p-7 lg:col-span-7">
-          <div className="text-xl font-black">Créer une cotisation</div>
+          <div className="text-xl font-black">
+            {t("client_create_sub", "Créer une cotisation")}
+          </div>
           <div className="mt-1 text-sm text-white/55">
-            Wallet (Djibouti) ou virement bancaire.
+            {t("client_sub_desc", "Wallet (Djibouti) ou virement bancaire.")}
           </div>
 
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
@@ -187,14 +216,14 @@ export default function ClientDashboard() {
                 onChange={(e) => setPaymentMethod(e.target.value)}
               >
                 <option value="BANK_TRANSFER" className="bg-slate-900">
-                  Virement bancaire
+                  {t("bank_transfer", "Virement bancaire")}
                 </option>
                 <option
                   value="WALLET"
                   className="bg-slate-900"
                   disabled={!isDjibouti}
                 >
-                  Wallet (Djibouti)
+                  {t("wallet_djibouti", "Wallet (Djibouti)")}
                 </option>
               </Select>
             </div>
@@ -226,7 +255,7 @@ export default function ClientDashboard() {
                     ))
                   ) : (
                     <option value="" className="bg-slate-900">
-                      -- Choisir un pays --
+                      {t("choose_country_first", "-- Choisir un pays --")}
                     </option>
                   )}
                 </Select>
@@ -243,7 +272,7 @@ export default function ClientDashboard() {
                 <Input
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
-                  placeholder="Numéro de compte"
+                  placeholder={t("account_number", "Numéro de compte")}
                 />
               </div>
             ) : (
@@ -263,7 +292,7 @@ export default function ClientDashboard() {
                 <Input
                   value={walletAccount}
                   onChange={(e) => setWalletAccount(e.target.value)}
-                  placeholder="Numéro wallet"
+                  placeholder={t("wallet_number", "Numéro wallet")}
                 />
               </div>
             )}
@@ -273,7 +302,7 @@ export default function ClientDashboard() {
               <Input
                 value={amount}
                 onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
-                placeholder="Montant"
+                placeholder={t("amount", "Montant")}
                 inputMode="numeric"
               />
 
@@ -296,8 +325,12 @@ export default function ClientDashboard() {
               </Select>
             </div>
 
-            <PrimaryButton type="submit" loading={createM.isPending}>
-              Créer
+            <PrimaryButton
+              type="submit"
+              loading={createM.isPending}
+              disabled={submitDisabled}
+            >
+              {t("create", "Créer")}
             </PrimaryButton>
           </form>
         </Card>
@@ -305,15 +338,27 @@ export default function ClientDashboard() {
         {/* LIST */}
         <Card className="p-7 lg:col-span-5">
           <div className="flex items-center justify-between">
-            <div className="text-sm font-black">Mes cotisations</div>
-            <div className="text-xs text-white/45">{subs.length} total</div>
+            <div className="text-sm font-black">
+              {t("my_subs", "Mes cotisations")}
+            </div>
+            <div className="text-xs text-white/45">
+              {subs.length} {t("total", "total")}
+            </div>
           </div>
 
           <div className="mt-4 space-y-3">
             {q.isLoading ? (
-              <div className="text-sm text-white/60">Chargement…</div>
+              <div className="text-sm text-white/60">
+                {t("loading", "Chargement…")}
+              </div>
+            ) : q.isError ? (
+              <div className="text-sm text-red-200">
+                {t("load_error", "Erreur de chargement.")}
+              </div>
             ) : subs.length === 0 ? (
-              <div className="text-sm text-white/60">Aucune cotisation.</div>
+              <div className="text-sm text-white/60">
+                {t("no_subs", "Aucune cotisation.")}
+              </div>
             ) : (
               subs.map((s) => (
                 <div
@@ -342,12 +387,12 @@ export default function ClientDashboard() {
                         onClick={() => consentM.mutate({ id: s.id })}
                         type="button"
                       >
-                        Accepter les conditions
+                        {t("accept_conditions", "Accepter les conditions")}
                       </PrimaryButton>
                     </div>
                   ) : (
                     <div className="mt-3 text-xs font-bold text-emerald-200">
-                      ✅ Consentement accepté
+                      ✅ {t("consent_ok", "Consentement accepté")}
                     </div>
                   )}
                 </div>
