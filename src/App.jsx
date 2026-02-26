@@ -9,6 +9,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import InviteCommunity from "./pages/InviteCommunity";
 
 function RTLHandler() {
   const { i18n } = useTranslation();
@@ -38,6 +39,15 @@ export default function App() {
             element={
               <ProtectedRoute role="CLIENT">
                 <ClientDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/invite"
+            element={
+              <ProtectedRoute role="CLIENT">
+                <InviteCommunity />
               </ProtectedRoute>
             }
           />

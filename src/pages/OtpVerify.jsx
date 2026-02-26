@@ -41,6 +41,7 @@ export default function OtpVerify() {
     mutationFn: verifyOtpApi,
     onSuccess: () => {
       toast.success(t("otp_verified", "OTP vérifié ✅ Tu peux te connecter."));
+      localStorage.setItem("invite_after_login", "1"); // ✅ flag
       nav("/login", { state: { email } });
     },
     onError: (err) =>

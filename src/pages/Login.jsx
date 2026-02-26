@@ -42,23 +42,43 @@ export default function Login() {
     mutationFn: loginApi,
     onSuccess: (data) => {
       login(data);
-      toast.success(t("login_success", "Connexion réussie ✅"));
-      if (data?.user?.role === "ADMIN") nav("/admin");
-      else nav("/client");
+      toast.success("Connexion réussie ✅");
+
+      // ✅ si nouveau client qui vient de valider OTP → propose invitation
+      const inviteAfter = localStorage.getItem("invite_after_login") === "1";
+
+      if (data.user.role === "ADMIN") {
+        nav("/admin");
+        return;
+      }
+
+      if (inviteAfter) {
+        localStorage.removeItem("invite_after_login");
+        nav("/invite");
+        return;
+      }
+
+      nav("/client");
     },
     onError: (err) => {
-      toast.error(err?.response?.data?.message || t("login_error", "Erreur login"));
+      toast.error(
+        err?.response?.data?.message || t("login_error", "Erreur login"),
+      );
     },
   });
 
   const canSubmit = useMemo(() => {
-    return email.trim().length > 0 && password.trim().length > 0 && !m.isPending;
+    return (
+      email.trim().length > 0 && password.trim().length > 0 && !m.isPending
+    );
   }, [email, password, m.isPending]);
 
   function onSubmit(e) {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
-      return toast.error(t("fill_required", "Veuillez remplir les champs requis."));
+      return toast.error(
+        t("fill_required", "Veuillez remplir les champs requis."),
+      );
     }
     m.mutate({ email: email.trim(), password });
   }
@@ -78,7 +98,10 @@ export default function Login() {
         </div>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-5">
-          <Field label={t("email", "Email")} hint={t("required", "Obligatoire")}>
+          <Field
+            label={t("email", "Email")}
+            hint={t("required", "Obligatoire")}
+          >
             <Input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -104,7 +127,11 @@ export default function Login() {
           </Field>
 
           <div className="grid gap-3 md:grid-cols-3">
-            <PrimaryButton type="submit" loading={m.isPending} disabled={!canSubmit}>
+            <PrimaryButton
+              type="submit"
+              loading={m.isPending}
+              disabled={!canSubmit}
+            >
               {t("login", "Se connecter")}
             </PrimaryButton>
 
@@ -120,7 +147,7 @@ export default function Login() {
           <p className="text-xs text-white/40">
             {t(
               "login_hint",
-              "Conseil: si tu viens de t’inscrire, vérifie ton OTP puis connecte-toi."
+              "Conseil: si tu viens de t’inscrire, vérifie ton OTP puis connecte-toi.",
             )}
           </p>
         </form>

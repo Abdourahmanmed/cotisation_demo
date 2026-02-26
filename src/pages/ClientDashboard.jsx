@@ -14,6 +14,7 @@ import {
   consentApi,
 } from "../api/subscriptions.api";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import { useNavigate } from "react-router-dom";
 
 const BANKS_BY_COUNTRY = {
   Djibouti: ["Salaam Bank", "EXIM Bank", "BCIMR", "BRED", "CAC Bank"],
@@ -49,6 +50,7 @@ export default function ClientDashboard() {
 
   const [amount, setAmount] = useState("6000");
   const [frequency, setFrequency] = useState("MONTHLY");
+  const nav = useNavigate();
 
   // =========================
   // DERIVED
@@ -171,9 +173,26 @@ export default function ClientDashboard() {
         <Brand />
         <LanguageSwitcher />
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => nav("/invite")}
+            className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 hover:bg-emerald-500/15"
+          >
+            {t("invite_community", "Inviter ma communauté")}
+          </button>
+
           <div className="text-xs text-white/60">
-            {user?.fullName} • <span className="font-bold">{user?.role}</span>
+            {user?.fullName} •{" "}
+            <span className="font-bold">
+              {t(
+                user?.accountType === "CLIENT_ADHERENT"
+                  ? "role_adherent"
+                  : user?.accountType === "ASSOCIATION"
+                    ? "role_association"
+                    : "role_unknown",
+              )}
+            </span>
           </div>
+
           <button
             onClick={logout}
             className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/80 hover:bg-white/10"
