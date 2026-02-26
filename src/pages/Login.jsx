@@ -16,8 +16,8 @@ function Field({ label, hint, children }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-end justify-between gap-3">
-        <label className="text-sm font-semibold text-white/90">{label}</label>
-        {hint ? <span className="text-xs text-white/50">{hint}</span> : null}
+        <label className="text-sm font-semibold text-slate-800">{label}</label>
+        {hint ? <span className="text-xs text-slate-500">{hint}</span> : null}
       </div>
       {children}
     </div>
@@ -42,7 +42,7 @@ export default function Login() {
     mutationFn: loginApi,
     onSuccess: (data) => {
       login(data);
-      toast.success("Connexion réussie ✅");
+      toast.success(t("login_success"));
 
       // ✅ si nouveau client qui vient de valider OTP → propose invitation
       const inviteAfter = localStorage.getItem("invite_after_login") === "1";
@@ -61,9 +61,7 @@ export default function Login() {
       nav("/client");
     },
     onError: (err) => {
-      toast.error(
-        err?.response?.data?.message || t("login_error", "Erreur login"),
-      );
+      toast.error(err?.response?.data?.message || t("login_error"));
     },
   });
 
@@ -76,82 +74,80 @@ export default function Login() {
   function onSubmit(e) {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
-      return toast.error(
-        t("fill_required", "Veuillez remplir les champs requis."),
-      );
+      return toast.error(t("fill_required"));
     }
     m.mutate({ email: email.trim(), password });
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Brand />
+    <div className="min-h-screen bg-white">
+      {/* Top header */}
+      <div className="border-b border-emerald-100 bg-white/80 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
+          <Brand />
+        </div>
       </div>
 
-      <Card className="p-7">
-        <div className="text-xl font-black tracking-tight">
-          {t("login", "Se connecter")}
-        </div>
-        <div className="mt-1 text-sm text-white/55">
-          {t("login_subtitle", "Accès client ou admin.")}
-        </div>
+      <div className="mx-auto max-w-5xl px-4 py-8">
+        <Card className="relative overflow-hidden border border-emerald-100 bg-white p-7 shadow-[0_20px_60px_-30px_rgba(16,185,129,0.25)]">
+          {/* soft gradient */}
+          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-emerald-100/60 blur-3xl" />
 
-        <form onSubmit={onSubmit} className="mt-6 space-y-5">
-          <Field
-            label={t("email", "Email")}
-            hint={t("required", "Obligatoire")}
-          >
-            <Input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t("email", "Email")}
-              type="email"
-              autoComplete="email"
-              required
-            />
-          </Field>
+          <div className="relative">
+            <div className="text-2xl font-black tracking-tight text-slate-900">
+              {t("login")}
+            </div>
+            <div className="mt-1 text-sm text-slate-600">
+              {t("login_subtitle")}
+            </div>
 
-          <Field
-            label={t("password", "Mot de passe")}
-            hint={t("required", "Obligatoire")}
-          >
-            <Input
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="********"
-              type="password"
-              autoComplete="current-password"
-              required
-            />
-          </Field>
+            <form onSubmit={onSubmit} className="mt-6 space-y-5">
+              <Field label={t("email")} hint={t("required")}>
+                <Input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t("email")}
+                  type="email"
+                  autoComplete="email"
+                  required
+                />
+              </Field>
 
-          <div className="grid gap-3 md:grid-cols-3">
-            <PrimaryButton
-              type="submit"
-              loading={m.isPending}
-              disabled={!canSubmit}
-            >
-              {t("login", "Se connecter")}
-            </PrimaryButton>
+              <Field label={t("password")} hint={t("required")}>
+                <Input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="********"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                />
+              </Field>
 
-            <GhostButton type="button" onClick={() => nav("/register")}>
-              {t("create_account", "Créer un compte")}
-            </GhostButton>
+              <div className="grid gap-3 md:grid-cols-3">
+                <PrimaryButton
+                  type="submit"
+                  loading={m.isPending}
+                  disabled={!canSubmit}
+                >
+                  {t("login")}
+                </PrimaryButton>
 
-            <GhostButton type="button" onClick={() => nav(-1)}>
-              {t("back", "Retour")}
-            </GhostButton>
+                <GhostButton type="button" onClick={() => nav("/register")}>
+                  {t("create_account")}
+                </GhostButton>
+
+                <GhostButton type="button" onClick={() => nav(-1)}>
+                  {t("back")}
+                </GhostButton>
+              </div>
+
+              <p className="text-xs text-slate-500">{t("login_hint")}</p>
+            </form>
           </div>
-
-          <p className="text-xs text-white/40">
-            {t(
-              "login_hint",
-              "Conseil: si tu viens de t’inscrire, vérifie ton OTP puis connecte-toi.",
-            )}
-          </p>
-        </form>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

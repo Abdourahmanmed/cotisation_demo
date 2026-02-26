@@ -2,7 +2,9 @@ export default function Card({ className = "", children }) {
   return (
     <div
       className={
-        "rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-[0_20px_60px_-30px_rgba(0,0,0,0.75)] " +
+        "rounded-3xl border border-emerald-100 bg-white shadow-lg " +
+        "shadow-emerald-100/50 transition-all duration-300 " +
+        "hover:shadow-xl hover:shadow-emerald-200/60 " +
         className
       }
     >

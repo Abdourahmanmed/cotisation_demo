@@ -3,8 +3,11 @@ export default function Input({ className = "", ...props }) {
     <input
       {...props}
       className={
-        "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none transition " +
-        "focus:border-emerald-400/40 focus:bg-white/10 focus:ring-4 focus:ring-emerald-400/10 " +
+        // ✅ White / Green theme
+        "w-full rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-800 " +
+        "placeholder:text-slate-400 outline-none transition shadow-sm " +
+        "focus:border-emerald-500 focus:ring-4 focus:ring-emerald-200/60 " +
+        "disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 " +
         className
       }
     />

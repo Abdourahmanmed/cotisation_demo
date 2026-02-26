@@ -1,11 +1,11 @@
 export default function Badge({ tone = "neutral", children }) {
   const map = {
-    neutral: "border-white/10 bg-white/5 text-white/80",
-    green: "border-emerald-400/20 bg-emerald-500/10 text-emerald-100",
-    yellow: "border-yellow-400/20 bg-yellow-500/10 text-yellow-100",
-    red: "border-red-400/20 bg-red-500/10 text-red-100",
-    blue: "border-cyan-400/20 bg-cyan-500/10 text-cyan-100",
-    purple: "border-fuchsia-400/20 bg-fuchsia-500/10 text-fuchsia-100",
+    neutral: "border-slate-200 bg-slate-50 text-slate-700",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    yellow: "border-amber-200 bg-amber-50 text-amber-800",
+    red: "border-red-200 bg-red-50 text-red-800",
+    blue: "border-sky-200 bg-sky-50 text-sky-800",
+    purple: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-800",
   };
 
   return (

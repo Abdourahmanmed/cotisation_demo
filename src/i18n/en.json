@@ -169,5 +169,35 @@
   "invite_copy_error": "Unable to copy link",
   "invite_dashboard": "Go to my dashboard →",
   "invite_tip": "Tip: the more you invite, the faster your community grows.",
-  "invite_message": "Join me on this platform ✅\nSign up here:"
+  "invite_message": "Join me on this platform ✅\nSign up here:",
+
+  "about": "About",
+  "features": "Features",
+  "contact": "Contact",
+
+  "about_title": "A solution built for what matters",
+  "about_desc": "We designed this platform to meet real needs in the field. Simple to use, powerful by nature, and accessible from anywhere in the world.",
+
+  "about_card_01": "Sign up in 2 minutes",
+  "about_card_02": "Intuitive interface",
+  "about_card_03": "Support 7 days a week",
+  "about_card_04": "Continuous updates",
+
+  "features_title": "Everything you need",
+  "features_desc": "Powerful tools combined in one elegant platform.",
+
+  "feature_1_title": "Ultra fast",
+  "feature_1_desc": "Optimized performance for a smooth and responsive experience at all times.",
+  "feature_2_title": "Secure",
+  "feature_2_desc": "Your data is protected with enterprise-grade end-to-end encryption.",
+  "feature_3_title": "Multilingual",
+  "feature_3_desc": "Available in multiple languages to reach a global audience without barriers.",
+  "feature_4_title": "Analytics",
+  "feature_4_desc": "Real-time dashboards to manage your activity with precision.",
+
+  "contact_title": "Let’s talk",
+  "contact_desc": "A question, an idea, or a project? Our team will get back to you quickly.",
+  "contact_cta": "Contact us",
+
+  "footer_rights": "All rights reserved"
 }

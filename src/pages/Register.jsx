@@ -15,8 +15,8 @@ function Field({ label, hint, children }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-end justify-between gap-3">
-        <label className="text-sm font-semibold text-white/90">{label}</label>
-        {hint ? <span className="text-xs text-white/50">{hint}</span> : null}
+        <label className="text-sm font-semibold text-slate-800">{label}</label>
+        {hint ? <span className="text-xs text-slate-500">{hint}</span> : null}
       </div>
       {children}
     </div>
@@ -25,14 +25,14 @@ function Field({ label, hint, children }) {
 
 function FileBox({ title, subtitle, name, accept, required = true }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="text-sm font-extrabold text-white/90">{title}</div>
-      <div className="mt-1 text-xs text-white/55">{subtitle}</div>
+    <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
+      <div className="text-sm font-extrabold text-slate-800">{title}</div>
+      <div className="mt-1 text-xs text-slate-500">{subtitle}</div>
       <input
         name={name}
         type="file"
         accept={accept}
-        className="mt-3 w-full text-sm text-white/70 file:mr-4 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-xs file:font-black file:text-white hover:file:bg-white/15"
+        className="mt-3 w-full text-sm text-slate-700 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-3 file:py-2 file:text-xs file:font-black file:text-white hover:file:bg-emerald-700"
         required={required}
       />
     </div>
@@ -52,270 +52,322 @@ export default function Register() {
   const m = useMutation({
     mutationFn: registerApi,
     onSuccess: (data) => {
-      toast.success(
-        t("register_success_otp_sent", "Inscription OK. OTP envoyé par email.")
-      );
+      toast.success(t("register_success_otp_sent"));
       nav("/otp", { state: { email: data?.user?.email } });
     },
     onError: (err) => {
-      toast.error(
-        err?.response?.data?.message || t("register_error", "Erreur inscription")
-      );
+      toast.error(err?.response?.data?.message || t("register_error"));
     },
   });
 
-  const canSubmit = useMemo(() => accepted && !m.isPending, [accepted, m.isPending]);
+  const canSubmit = useMemo(
+    () => accepted && !m.isPending,
+    [accepted, m.isPending],
+  );
 
   function onSubmit(e) {
     e.preventDefault();
 
     if (!accepted) {
-      return toast.error(
-        t("must_accept_terms", "Tu dois accepter les conditions d’utilisation.")
-      );
+      return toast.error(t("must_accept_terms"));
     }
 
     const fd = new FormData(e.currentTarget);
 
     // ✅ NOMS EXACTS BACKEND
     fd.set("accountType", accountType);
-    fd.set("acceptedConditions", "true"); // backend convertit "true" => boolean
+    fd.set("acceptedConditions", "true");
 
-    // ✅ Si ASSOCIATION: on retire tout ce qui ne doit pas partir
     if (isAssociation) {
       fd.delete("fullName");
       fd.delete("idDoc");
       fd.delete("selfie");
-      // (optionnel) au cas où
       fd.delete("consentAccepted");
     } else {
-      // ✅ CLIENT_ADHERENT: on retire les champs association si présents
       fd.delete("companyName");
       fd.delete("phone2");
       fd.delete("commune");
     }
 
-    // 🔍 Debug
-    console.group("📦 FormData envoyé au backend (/api/auth/register)");
-    for (const [key, value] of fd.entries()) {
-      if (value instanceof File) {
-        console.log(key, { name: value.name, type: value.type, size: value.size });
-      } else {
-        console.log(key, value);
-      }
-    }
-    console.groupEnd();
-
     m.mutate(fd);
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Brand />
-        <div className="hidden text-xs text-white/45 md:block">
-          {t("step_1_2", "Étape 1/2")}
+    <div className="min-h-screen bg-white">
+      {/* Top header */}
+      <div className="border-b border-emerald-100 bg-white/80 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
+          <Brand />
+          <div className="hidden text-xs font-semibold text-slate-500 md:block">
+            {t("step_1_2")}
+          </div>
         </div>
       </div>
 
-      <Card className="p-7">
-        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-          <div>
-            <div className="text-xl font-black tracking-tight">{t("register_title")}</div>
-            <div className="mt-1 text-sm text-white/55">{t("register_subtitle")}</div>
-          </div>
-          <div className="text-xs text-white/45 md:hidden">
-            {t("step_1_2", "Étape 1/2")}
-          </div>
-        </div>
+      <div className="mx-auto max-w-5xl px-4 py-8">
+        <Card className="relative overflow-hidden border border-emerald-100 bg-white p-7 shadow-[0_20px_60px_-30px_rgba(16,185,129,0.25)]">
+          {/* soft gradient */}
+          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-emerald-100/60 blur-3xl" />
 
-        <form onSubmit={onSubmit} className="mt-6 space-y-5">
-          {/* Account Type */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label={t("account_type", "Type de compte")} hint={t("required", "Obligatoire")}>
-              <Select value={accountType} onChange={(e) => setAccountType(e.target.value)}>
-                <option value="CLIENT_ADHERENT" className="bg-slate-900">
-                  {t("account_type_client", "Client adhérent")}
-                </option>
-                <option value="ASSOCIATION" className="bg-slate-900">
-                  {t("account_type_association", "Association")}
-                </option>
-              </Select>
-            </Field>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/55">
-              {isAssociation
-                ? t("association_hint", "Association: infos société + contacts. Pas de documents.")
-                : t("client_hint", "Client adhérent: formulaire complet + documents + selfie.")}
+          <div className="relative flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div>
+              <div className="text-2xl font-black tracking-tight text-slate-900">
+                {t("register_title")}
+              </div>
+              <div className="mt-1 text-sm text-slate-600">
+                {t("register_subtitle")}
+              </div>
+            </div>
+            <div className="text-xs font-semibold text-slate-500 md:hidden">
+              {t("step_1_2")}
             </div>
           </div>
 
-          {/* =========================
-              ASSOCIATION
-             ========================= */}
-          {isAssociation ? (
-            <>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label={t("company_name", "Nom de la société")} hint={t("required", "Obligatoire")}>
-                  <Input
-                    name="companyName" // ✅ backend
-                    placeholder={t("company_name_ph", "Ex: Association Xeer Ciise")}
+          <form onSubmit={onSubmit} className="relative mt-8 space-y-6">
+            {/* Account Type */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label={t("account_type")} hint={t("required")}>
+                <Select
+                  value={accountType}
+                  onChange={(e) => setAccountType(e.target.value)}
+                  className="border-emerald-100 bg-white text-slate-800 focus:border-emerald-400 focus:ring-emerald-200"
+                >
+                  <option value="CLIENT_ADHERENT">
+                    {t("account_type_client")}
+                  </option>
+                  <option value="ASSOCIATION">
+                    {t("account_type_association")}
+                  </option>
+                </Select>
+              </Field>
+
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 text-xs text-slate-600">
+                {isAssociation ? t("association_hint") : t("client_hint")}
+              </div>
+            </div>
+
+            {/* =========================
+                ASSOCIATION
+               ========================= */}
+            {isAssociation ? (
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label={t("company_name")} hint={t("required")}>
+                    <Input
+                      name="companyName"
+                      placeholder={t("company_name_ph")}
+                      required
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+
+                  <Field label={t("phone")} hint={t("required")}>
+                    <Input
+                      name="phone"
+                      placeholder={t("phone_placeholder")}
+                      inputMode="tel"
+                      required
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label={t("phone_2")} hint={t("optional")}>
+                    <Input
+                      name="phone2"
+                      placeholder={t("phone2_ph")}
+                      inputMode="tel"
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+
+                  <Field label={t("email")} hint={t("required")}>
+                    <Input
+                      name="email"
+                      placeholder={t("email_placeholder")}
+                      type="email"
+                      required
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label={t("country")} hint={t("required")}>
+                    <Input
+                      name="country"
+                      placeholder={t("country_placeholder")}
+                      required
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+
+                  <Field label={t("city")} hint={t("required")}>
+                    <Input
+                      name="city"
+                      placeholder={t("city_placeholder")}
+                      required
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label={t("commune")} hint={t("required")}>
+                    <Input
+                      name="commune"
+                      placeholder={t("commune_ph")}
+                      required
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+
+                  <Field label={t("password")} hint={t("password_hint")}>
+                    <Input
+                      name="password"
+                      placeholder="********"
+                      type="password"
+                      required
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+                </div>
+              </>
+            ) : (
+              /* =========================
+                  CLIENT_ADHERENT
+                 ========================= */
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label={t("full_name")} hint={t("required")}>
+                    <Input
+                      name="fullName"
+                      placeholder={t("full_name_placeholder")}
+                      required
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+
+                  <Field label={t("phone")} hint={t("phone_hint")}>
+                    <Input
+                      name="phone"
+                      placeholder={t("phone_placeholder")}
+                      inputMode="tel"
+                      required
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label={t("email")} hint={t("required")}>
+                    <Input
+                      name="email"
+                      placeholder={t("email_placeholder")}
+                      type="email"
+                      required
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+
+                  <Field label={t("password")} hint={t("password_hint")}>
+                    <Input
+                      name="password"
+                      placeholder="********"
+                      type="password"
+                      required
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label={t("country")} hint={t("required")}>
+                    <Input
+                      name="country"
+                      placeholder={t("country_placeholder")}
+                      required
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+
+                  <Field label={t("city")} hint={t("required")}>
+                    <Input
+                      name="city"
+                      placeholder={t("city_placeholder")}
+                      required
+                      className="border-emerald-100 bg-white text-slate-800 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-emerald-200"
+                    />
+                  </Field>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FileBox
+                    title={t("id_doc")}
+                    subtitle={t("id_doc_hint")}
+                    name="idDoc"
+                    accept="image/*,application/pdf"
                     required
                   />
-                </Field>
-
-                <Field label={t("phone", "Téléphone")} hint={t("required", "Obligatoire")}>
-                  <Input
-                    name="phone" // ✅ backend
-                    placeholder={t("phone_placeholder", "Ex: 77 12 34 56")}
-                    inputMode="tel"
+                  <FileBox
+                    title={t("selfie")}
+                    subtitle={t("selfie_hint")}
+                    name="selfie"
+                    accept="image/*"
                     required
                   />
-                </Field>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label={t("phone_2", "Téléphone 2")} hint={t("optional", "Optionnel")}>
-                  <Input
-                    name="phone2" // ✅ backend
-                    placeholder={t("phone2_ph", "Ex: 75 00 00 00")}
-                    inputMode="tel"
-                  />
-                </Field>
-
-                <Field label={t("email")} hint={t("required", "Obligatoire")}>
-                  <Input
-                    name="email"
-                    placeholder={t("email_placeholder", "Ex: contact@mail.com")}
-                    type="email"
-                    required
-                  />
-                </Field>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label={t("country")} hint={t("required", "Obligatoire")}>
-                  <Input name="country" placeholder={t("country_placeholder", "Ex: Djibouti")} required />
-                </Field>
-
-                <Field label={t("city")} hint={t("required", "Obligatoire")}>
-                  <Input name="city" placeholder={t("city_placeholder", "Ex: Djibouti")} required />
-                </Field>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label={t("commune", "Commune")} hint={t("required", "Obligatoire")}>
-                  <Input name="commune" placeholder={t("commune_ph", "Ex: Balbala")} required />
-                </Field>
-
-                <Field label={t("password")} hint={t("password_hint", "Min 8 caractères")}>
-                  <Input name="password" placeholder="********" type="password" required />
-                </Field>
-              </div>
-            </>
-          ) : (
-            /* =========================
-                CLIENT_ADHERENT
-               ========================= */
-            <>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label={t("full_name")} hint={t("required", "Obligatoire")}>
-                  <Input
-                    name="fullName"
-                    placeholder={t("full_name_placeholder", "Ex: Abdourahman Youssouf")}
-                    required
-                  />
-                </Field>
-
-                <Field label={t("phone")} hint={t("phone_hint", "Ex: 77xxxxxx")}>
-                  <Input
-                    name="phone"
-                    placeholder={t("phone_placeholder", "Ex: 77 12 34 56")}
-                    inputMode="tel"
-                    required
-                  />
-                </Field>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label={t("email")} hint={t("required", "Obligatoire")}>
-                  <Input
-                    name="email"
-                    placeholder={t("email_placeholder", "Ex: abdou@mail.com")}
-                    type="email"
-                    required
-                  />
-                </Field>
-
-                <Field label={t("password")} hint={t("password_hint", "Min 8 caractères")}>
-                  <Input name="password" placeholder="********" type="password" required />
-                </Field>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label={t("country")} hint={t("required", "Obligatoire")}>
-                  <Input name="country" placeholder={t("country_placeholder", "Ex: Djibouti")} required />
-                </Field>
-
-                <Field label={t("city")} hint={t("required", "Obligatoire")}>
-                  <Input name="city" placeholder={t("city_placeholder", "Ex: Djibouti")} required />
-                </Field>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <FileBox
-                  title={t("id_doc")}
-                  subtitle={t("id_doc_hint", "PNG/JPG/PDF")}
-                  name="idDoc"
-                  accept="image/*,application/pdf"
-                  required
-                />
-                <FileBox
-                  title={t("selfie")}
-                  subtitle={t("selfie_hint", "PNG/JPG")}
-                  name="selfie"
-                  accept="image/*"
-                  required
-                />
-              </div>
-            </>
-          )}
-
-          {/* Terms */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <label className="flex gap-3">
-              <input
-                type="checkbox"
-                checked={accepted}
-                onChange={(e) => setAccepted(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-white/20 bg-white/10 text-emerald-400 focus:ring-emerald-400/20"
-              />
-              <div>
-                <div className="text-sm font-extrabold text-white/90">{t("accept_terms")}</div>
-                <div className="mt-1 text-xs text-white/55">{t("accept_terms_hint")}</div>
-              </div>
-            </label>
-          </div>
-
-          {/* Actions */}
-          <div className="grid gap-3 md:grid-cols-2">
-            <PrimaryButton type="submit" loading={m.isPending} disabled={!canSubmit}>
-              {t("submit_register")}
-            </PrimaryButton>
-
-            <GhostButton type="button" onClick={() => nav(-1)}>
-              {t("back", "Retour")}
-            </GhostButton>
-          </div>
-
-          <p className="text-xs text-white/40">
-            {t(
-              "register_footer_note",
-              "En envoyant ce formulaire, vous acceptez nos conditions et lancez la vérification OTP."
+                </div>
+              </>
             )}
-          </p>
-        </form>
-      </Card>
+
+            {/* Terms */}
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
+              <label className="flex gap-3">
+                <input
+                  type="checkbox"
+                  checked={accepted}
+                  onChange={(e) => setAccepted(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-emerald-200 bg-white text-emerald-600 focus:ring-emerald-200"
+                />
+                <div>
+                  <div className="text-sm font-extrabold text-slate-900">
+                    {t("accept_terms")}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-600">
+                    {t("accept_terms_hint")}
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Actions */}
+            <div className="grid gap-3 md:grid-cols-2">
+              <PrimaryButton
+                type="submit"
+                loading={m.isPending}
+                disabled={!canSubmit}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                {t("submit_register")}
+              </PrimaryButton>
+
+              <GhostButton
+                type="button"
+                onClick={() => nav(-1)}
+                className="border-emerald-200 text-slate-800 hover:bg-emerald-50"
+              >
+                {t("back")}
+              </GhostButton>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              {t("register_footer_note")}
+            </p>
+          </form>
+        </Card>
+      </div>
     </div>
   );
 }

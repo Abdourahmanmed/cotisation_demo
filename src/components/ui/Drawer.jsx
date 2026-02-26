@@ -12,17 +12,17 @@ export default function Drawer({
     <div className="fixed inset-0 z-50">
       {/* overlay */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* panel */}
-      <div className="absolute right-0 top-0 h-full w-full max-w-xl border-l border-white/10 bg-slate-950/70 p-5 shadow-[0_20px_80px_-30px_rgba(0,0,0,0.9)] backdrop-blur-xl">
+      <div className="absolute right-0 top-0 h-full w-full max-w-xl border-l border-emerald-100 bg-white p-5 shadow-2xl">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-lg font-black text-white/95">{title}</div>
+            <div className="text-lg font-black text-slate-900">{title}</div>
             {subtitle ? (
-              <div className="mt-1 text-sm text-white/55">{subtitle}</div>
+              <div className="mt-1 text-sm text-slate-600">{subtitle}</div>
             ) : null}
           </div>
 
@@ -30,7 +30,7 @@ export default function Drawer({
             {right}
             <button
               onClick={onClose}
-              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white/80 hover:bg-white/10"
+              className="rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-emerald-50 hover:border-emerald-300 focus:outline-none focus:ring-4 focus:ring-emerald-100"
             >
               Fermer
             </button>

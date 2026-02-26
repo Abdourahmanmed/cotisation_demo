@@ -169,5 +169,35 @@
   "invite_copy_error": "Impossible de copier le lien",
   "invite_dashboard": "Accéder à mon tableau de bord →",
   "invite_tip": "Astuce: plus tu invites, plus ta communauté grandit vite.",
-  "invite_message": "Rejoins-moi sur cette plateforme ✅\nInscris-toi ici:"
+  "invite_message": "Rejoins-moi sur cette plateforme ✅\nInscris-toi ici:",
+
+  "about": "À propos",
+  "features": "Fonctionnalités",
+  "contact": "Contact",
+
+  "about_title": "Une solution pensée pour l'essentiel",
+  "about_desc": "Nous avons conçu cette plateforme pour répondre aux vrais besoins du terrain. Simple à utiliser, puissante par nature, et accessible depuis n'importe où dans le monde.",
+
+  "about_card_01": "Inscription en 2 minutes",
+  "about_card_02": "Interface intuitive",
+  "about_card_03": "Support 7j/7",
+  "about_card_04": "Mises à jour continues",
+
+  "features_title": "Tout ce dont vous avez besoin",
+  "features_desc": "Des outils puissants réunis dans une seule plateforme élégante.",
+
+  "feature_1_title": "Ultra rapide",
+  "feature_1_desc": "Des performances optimisées pour une expérience fluide et réactive à chaque instant.",
+  "feature_2_title": "Sécurisé",
+  "feature_2_desc": "Vos données sont protégées par un chiffrement de bout en bout de niveau entreprise.",
+  "feature_3_title": "Multilingue",
+  "feature_3_desc": "Disponible en plusieurs langues pour toucher un public mondial sans barrières.",
+  "feature_4_title": "Analytique",
+  "feature_4_desc": "Tableaux de bord en temps réel pour piloter vos activités avec précision.",
+
+  "contact_title": "Parlons ensemble",
+  "contact_desc": "Une question, une idée ou un projet ? Notre équipe vous répond rapidement.",
+  "contact_cta": "Nous contacter",
+
+  "footer_rights": "Tous droits réservés"
 }

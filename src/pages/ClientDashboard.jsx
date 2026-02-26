@@ -33,6 +33,7 @@ const WALLET_PROVIDERS = [
 export default function ClientDashboard() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const nav = useNavigate();
 
   // =========================
   // STATE
@@ -50,7 +51,6 @@ export default function ClientDashboard() {
 
   const [amount, setAmount] = useState("6000");
   const [frequency, setFrequency] = useState("MONTHLY");
-  const nav = useNavigate();
 
   // =========================
   // DERIVED
@@ -69,7 +69,6 @@ export default function ClientDashboard() {
   // =========================
   // EFFECTS
   // =========================
-  // Si pays change et banque invalide => reset banque
   useEffect(() => {
     if (!banksForCountry.length) {
       setBankName("");
@@ -81,7 +80,6 @@ export default function ClientDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bankCountry, banksForCountry]);
 
-  // Si wallet mais pays != Djibouti => switch auto en virement
   useEffect(() => {
     if (!isDjibouti && paymentMethod === "WALLET") {
       setPaymentMethod("BANK_TRANSFER");
@@ -99,27 +97,21 @@ export default function ClientDashboard() {
   const createM = useMutation({
     mutationFn: createSubscriptionApi,
     onSuccess: () => {
-      toast.success(t("sub_created", "Cotisation créée ✅"));
+      toast.success(t("sub_created"));
       q.refetch();
     },
     onError: (err) =>
-      toast.error(
-        err?.response?.data?.message ||
-          t("sub_create_error", "Erreur création"),
-      ),
+      toast.error(err?.response?.data?.message || t("sub_create_error")),
   });
 
   const consentM = useMutation({
     mutationFn: ({ id }) => consentApi(id, true),
     onSuccess: () => {
-      toast.success(t("consent_accepted", "Consentement accepté ✅"));
+      toast.success(t("consent_accepted"));
       q.refetch();
     },
     onError: (err) =>
-      toast.error(
-        err?.response?.data?.message ||
-          t("consent_error", "Erreur consentement"),
-      ),
+      toast.error(err?.response?.data?.message || t("consent_error")),
   });
 
   // =========================
@@ -138,21 +130,16 @@ export default function ClientDashboard() {
     };
 
     if (!payload.amount || payload.amount <= 0) {
-      return toast.error(t("amount_required", "Montant requis."));
+      return toast.error(t("amount_required"));
     }
 
     if (paymentMethod === "BANK_TRANSFER") {
-      if (!accountNumber.trim())
-        return toast.error(t("account_required", "Numéro de compte requis."));
+      if (!accountNumber.trim()) return toast.error(t("account_required"));
       payload.mode = mode;
       payload.accountNumber = accountNumber.trim();
     } else {
-      if (!isDjibouti)
-        return toast.error(
-          t("wallet_only_dj", "Wallet disponible uniquement pour Djibouti."),
-        );
-      if (!walletAccount.trim())
-        return toast.error(t("wallet_required", "Numéro wallet requis."));
+      if (!isDjibouti) return toast.error(t("wallet_only_dj"));
+      if (!walletAccount.trim()) return toast.error(t("wallet_required"));
       payload.walletProvider = walletProvider;
       payload.walletAccount = walletAccount.trim();
     }
@@ -167,258 +154,251 @@ export default function ClientDashboard() {
       ? !accountNumber.trim()
       : !walletAccount.trim());
 
+  const roleKey =
+    user?.accountType === "CLIENT_ADHERENT"
+      ? "role_adherent"
+      : user?.accountType === "ASSOCIATION"
+        ? "role_association"
+        : "role_unknown";
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Brand />
-        <LanguageSwitcher />
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => nav("/invite")}
-            className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 hover:bg-emerald-500/15"
-          >
-            {t("invite_community", "Inviter ma communauté")}
-          </button>
+    <div className="min-h-screen bg-white">
+      {/* Top bar */}
+      <div className="border-b border-emerald-100 bg-white/80 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4">
+          <Brand />
 
-          <div className="text-xs text-white/60">
-            {user?.fullName} •{" "}
-            <span className="font-bold">
-              {t(
-                user?.accountType === "CLIENT_ADHERENT"
-                  ? "role_adherent"
-                  : user?.accountType === "ASSOCIATION"
-                    ? "role_association"
-                    : "role_unknown",
-              )}
-            </span>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+
+            <button
+              onClick={() => nav("/invite")}
+              className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+            >
+              {t("invite_community")}
+            </button>
+
+            <div className="hidden text-xs text-slate-500 md:block">
+              {user?.fullName} •{" "}
+              <span className="font-bold text-slate-800">{t(roleKey)}</span>
+            </div>
+
+            <button
+              onClick={logout}
+              className="rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-emerald-50 focus:outline-none focus:ring-4 focus:ring-emerald-100"
+            >
+              {t("logout")}
+            </button>
           </div>
+        </div>
 
-          <button
-            onClick={logout}
-            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/80 hover:bg-white/10"
-          >
-            {t("logout", "Déconnexion")}
-          </button>
+        {/* mobile user */}
+        <div className="mx-auto max-w-6xl px-4 pb-4 md:hidden">
+          <div className="text-xs text-slate-500">
+            {user?.fullName} •{" "}
+            <span className="font-bold text-slate-800">{t(roleKey)}</span>
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* FORM */}
-        <Card className="p-7 lg:col-span-7">
-          <div className="text-xl font-black">
-            {t("client_create_sub", "Créer une cotisation")}
-          </div>
-          <div className="mt-1 text-sm text-white/55">
-            {t("client_sub_desc", "Wallet (Djibouti) ou virement bancaire.")}
-          </div>
+      <div className="mx-auto max-w-6xl px-4 py-8">
+        <div className="grid gap-6 lg:grid-cols-12">
+          {/* FORM */}
+          <Card className="relative overflow-hidden p-7 lg:col-span-7">
+            {/* soft gradients */}
+            <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-emerald-100/60 blur-3xl" />
 
-          <form onSubmit={onSubmit} className="mt-6 space-y-4">
-            {/* Currency + PaymentMethod */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <Select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-              >
-                <option value="DJF" className="bg-slate-900">
-                  DJF
-                </option>
-                <option value="USD" className="bg-slate-900">
-                  USD
-                </option>
-                <option value="EUR" className="bg-slate-900">
-                  EUR
-                </option>
-              </Select>
+            <div className="relative">
+              <div className="text-2xl font-black text-slate-900">
+                {t("client_create_sub")}
+              </div>
+              <div className="mt-1 text-sm text-slate-600">
+                {t("client_sub_desc")}
+              </div>
 
-              <Select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-              >
-                <option value="BANK_TRANSFER" className="bg-slate-900">
-                  {t("bank_transfer", "Virement bancaire")}
-                </option>
-                <option
-                  value="WALLET"
-                  className="bg-slate-900"
-                  disabled={!isDjibouti}
-                >
-                  {t("wallet_djibouti", "Wallet (Djibouti)")}
-                </option>
-              </Select>
-            </div>
+              <form onSubmit={onSubmit} className="mt-6 space-y-4">
+                {/* Currency + PaymentMethod */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                  >
+                    <option value="DJF">DJF</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                  </Select>
 
-            {/* BANK TRANSFER */}
-            {paymentMethod === "BANK_TRANSFER" ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                <Select
-                  value={bankCountry}
-                  onChange={(e) => setBankCountry(e.target.value)}
-                >
-                  {countries.map((c) => (
-                    <option key={c} value={c} className="bg-slate-900">
-                      {c}
+                  <Select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
+                    <option value="BANK_TRANSFER">{t("bank_transfer")}</option>
+                    <option value="WALLET" disabled={!isDjibouti}>
+                      {t("wallet_djibouti")}
                     </option>
-                  ))}
-                </Select>
-
-                <Select
-                  value={bankName}
-                  onChange={(e) => setBankName(e.target.value)}
-                  disabled={!banksForCountry.length}
-                >
-                  {banksForCountry.length ? (
-                    banksForCountry.map((b) => (
-                      <option key={b} value={b} className="bg-slate-900">
-                        {b}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="" className="bg-slate-900">
-                      {t("choose_country_first", "-- Choisir un pays --")}
-                    </option>
-                  )}
-                </Select>
-
-                <Select value={mode} onChange={(e) => setMode(e.target.value)}>
-                  <option value="AUTOMATIC" className="bg-slate-900">
-                    AUTOMATIC
-                  </option>
-                  <option value="MANUAL" className="bg-slate-900">
-                    MANUAL
-                  </option>
-                </Select>
-
-                <Input
-                  value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
-                  placeholder={t("account_number", "Numéro de compte")}
-                />
-              </div>
-            ) : (
-              /* WALLET */
-              <div className="grid gap-4 md:grid-cols-2">
-                <Select
-                  value={walletProvider}
-                  onChange={(e) => setWalletProvider(e.target.value)}
-                >
-                  {WALLET_PROVIDERS.map((w) => (
-                    <option key={w.id} value={w.id} className="bg-slate-900">
-                      {w.label}
-                    </option>
-                  ))}
-                </Select>
-
-                <Input
-                  value={walletAccount}
-                  onChange={(e) => setWalletAccount(e.target.value)}
-                  placeholder={t("wallet_number", "Numéro wallet")}
-                />
-              </div>
-            )}
-
-            {/* Amount + Frequency */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <Input
-                value={amount}
-                onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
-                placeholder={t("amount", "Montant")}
-                inputMode="numeric"
-              />
-
-              <Select
-                value={frequency}
-                onChange={(e) => setFrequency(e.target.value)}
-              >
-                <option value="MONTHLY" className="bg-slate-900">
-                  MONTHLY
-                </option>
-                <option value="QUARTERLY" className="bg-slate-900">
-                  QUARTERLY
-                </option>
-                <option value="SEMIANNUAL" className="bg-slate-900">
-                  SEMIANNUAL
-                </option>
-                <option value="ANNUAL" className="bg-slate-900">
-                  ANNUAL
-                </option>
-              </Select>
-            </div>
-
-            <PrimaryButton
-              type="submit"
-              loading={createM.isPending}
-              disabled={submitDisabled}
-            >
-              {t("create", "Créer")}
-            </PrimaryButton>
-          </form>
-        </Card>
-
-        {/* LIST */}
-        <Card className="p-7 lg:col-span-5">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-black">
-              {t("my_subs", "Mes cotisations")}
-            </div>
-            <div className="text-xs text-white/45">
-              {subs.length} {t("total", "total")}
-            </div>
-          </div>
-
-          <div className="mt-4 space-y-3">
-            {q.isLoading ? (
-              <div className="text-sm text-white/60">
-                {t("loading", "Chargement…")}
-              </div>
-            ) : q.isError ? (
-              <div className="text-sm text-red-200">
-                {t("load_error", "Erreur de chargement.")}
-              </div>
-            ) : subs.length === 0 ? (
-              <div className="text-sm text-white/60">
-                {t("no_subs", "Aucune cotisation.")}
-              </div>
-            ) : (
-              subs.map((s) => (
-                <div
-                  key={s.id}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-extrabold">
-                      {s.paymentMethod}
-                    </div>
-                    <div className="text-xs text-white/50">{s.status}</div>
-                  </div>
-
-                  <div className="mt-2 text-xs text-white/60">
-                    {s.bankCountry} • {s.bankName} • {s.currency}
-                  </div>
-
-                  <div className="mt-2 text-sm font-black text-emerald-200">
-                    {s.amount} {s.currency} • {s.frequency}
-                  </div>
-
-                  {!s.consentAccepted ? (
-                    <div className="mt-3">
-                      <PrimaryButton
-                        loading={consentM.isPending}
-                        onClick={() => consentM.mutate({ id: s.id })}
-                        type="button"
-                      >
-                        {t("accept_conditions", "Accepter les conditions")}
-                      </PrimaryButton>
-                    </div>
-                  ) : (
-                    <div className="mt-3 text-xs font-bold text-emerald-200">
-                      ✅ {t("consent_ok", "Consentement accepté")}
-                    </div>
-                  )}
+                  </Select>
                 </div>
-              ))
-            )}
-          </div>
-        </Card>
+
+                {/* BANK TRANSFER */}
+                {paymentMethod === "BANK_TRANSFER" ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Select
+                      value={bankCountry}
+                      onChange={(e) => setBankCountry(e.target.value)}
+                    >
+                      {countries.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </Select>
+
+                    <Select
+                      value={bankName}
+                      onChange={(e) => setBankName(e.target.value)}
+                      disabled={!banksForCountry.length}
+                    >
+                      {banksForCountry.length ? (
+                        banksForCountry.map((b) => (
+                          <option key={b} value={b}>
+                            {b}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="">{t("choose_country_first")}</option>
+                      )}
+                    </Select>
+
+                    <Select
+                      value={mode}
+                      onChange={(e) => setMode(e.target.value)}
+                    >
+                      <option value="AUTOMATIC">AUTOMATIC</option>
+                      <option value="MANUAL">MANUAL</option>
+                    </Select>
+
+                    <Input
+                      value={accountNumber}
+                      onChange={(e) => setAccountNumber(e.target.value)}
+                      placeholder={t("account_number")}
+                    />
+                  </div>
+                ) : (
+                  /* WALLET */
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Select
+                      value={walletProvider}
+                      onChange={(e) => setWalletProvider(e.target.value)}
+                    >
+                      {WALLET_PROVIDERS.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.label}
+                        </option>
+                      ))}
+                    </Select>
+
+                    <Input
+                      value={walletAccount}
+                      onChange={(e) => setWalletAccount(e.target.value)}
+                      placeholder={t("wallet_number")}
+                    />
+                  </div>
+                )}
+
+                {/* Amount + Frequency */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Input
+                    value={amount}
+                    onChange={(e) =>
+                      setAmount(e.target.value.replace(/\D/g, ""))
+                    }
+                    placeholder={t("amount")}
+                    inputMode="numeric"
+                  />
+
+                  <Select
+                    value={frequency}
+                    onChange={(e) => setFrequency(e.target.value)}
+                  >
+                    <option value="MONTHLY">MONTHLY</option>
+                    <option value="QUARTERLY">QUARTERLY</option>
+                    <option value="SEMIANNUAL">SEMIANNUAL</option>
+                    <option value="ANNUAL">ANNUAL</option>
+                  </Select>
+                </div>
+
+                <PrimaryButton
+                  type="submit"
+                  loading={createM.isPending}
+                  disabled={submitDisabled}
+                >
+                  {t("create")}
+                </PrimaryButton>
+              </form>
+            </div>
+          </Card>
+
+          {/* LIST */}
+          <Card className="p-7 lg:col-span-5">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-black text-slate-900">
+                {t("my_subs")}
+              </div>
+              <div className="text-xs text-slate-500">
+                {subs.length} {t("total")}
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {q.isLoading ? (
+                <div className="text-sm text-slate-600">{t("loading")}</div>
+              ) : q.isError ? (
+                <div className="text-sm text-red-600">{t("load_error")}</div>
+              ) : subs.length === 0 ? (
+                <div className="text-sm text-slate-600">{t("no_subs")}</div>
+              ) : (
+                subs.map((s) => (
+                  <div
+                    key={s.id}
+                    className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-extrabold text-slate-900">
+                        {s.paymentMethod}
+                      </div>
+                      <div className="text-xs text-slate-500">{s.status}</div>
+                    </div>
+
+                    <div className="mt-2 text-xs text-slate-600">
+                      {s.bankCountry} • {s.bankName} • {s.currency}
+                    </div>
+
+                    <div className="mt-2 text-sm font-black text-emerald-700">
+                      {s.amount} {s.currency} • {s.frequency}
+                    </div>
+
+                    {!s.consentAccepted ? (
+                      <div className="mt-3">
+                        <PrimaryButton
+                          loading={consentM.isPending}
+                          onClick={() => consentM.mutate({ id: s.id })}
+                          type="button"
+                        >
+                          {t("accept_conditions")}
+                        </PrimaryButton>
+                      </div>
+                    ) : (
+                      <div className="mt-3 text-xs font-semibold text-emerald-700">
+                        ✅ {t("consent_ok")}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );

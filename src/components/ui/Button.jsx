@@ -27,8 +27,10 @@ export function GhostButton({ className = "", children, ...props }) {
     <button
       {...props}
       className={
-        "inline-flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-extrabold text-white/90 transition " +
-        "hover:bg-white/10 active:bg-white/5 " +
+        "inline-flex w-full items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition " +
+        "hover:bg-emerald-50 hover:border-emerald-300 " +
+        "active:bg-emerald-100 " +
+        "focus:outline-none focus:ring-4 focus:ring-emerald-100 " +
         className
       }
     >

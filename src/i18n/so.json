@@ -169,5 +169,35 @@
   "invite_copy_error": "Lama koobbi karin link-ga",
   "invite_dashboard": "Gal dashboard-kayga →",
   "invite_tip": "Talo: inta badan oo aad casuunto, ayay bulshadu u kortaa.",
-  "invite_message": "Ku soo biir madashan ✅\nIsdiiwaangeli halkan:"
+  "invite_message": "Ku soo biir madashan ✅\nIsdiiwaangeli halkan:",
+
+  "about": "Ku saabsan",
+  "features": "Astaamo",
+  "contact": "Xiriir",
+
+  "about_title": "Xal loogu talagalay waxa muhiimka ah",
+  "about_desc": "Waxaan u naqshadeynay madashan si ay u daboolto baahiyaha dhabta ah ee adeegga. Way fududahay, awoodna way leedahay, waxaana laga isticmaali karaa meel kasta oo dunida ah.",
+
+  "about_card_01": "Is-diiwaangelin 2 daqiiqo",
+  "about_card_02": "Interface fudud",
+  "about_card_03": "Taageero 7/7",
+  "about_card_04": "Cusbooneysiin joogto ah",
+
+  "features_title": "Wax kasta oo aad u baahan tahay",
+  "features_desc": "Qalab awood leh oo lagu mideeyay hal madal oo qurux badan.",
+
+  "feature_1_title": "Aad u dhakhso badan",
+  "feature_1_desc": "Waxqabad la hagaajiyay si ay khibraddu u noqoto mid siman oo degdeg ah mar walba.",
+  "feature_2_title": "Ammaan",
+  "feature_2_desc": "Xogtaada waxaa ilaaliya sirayn heer-shirkadeed ah (end-to-end).",
+  "feature_3_title": "Luuqado badan",
+  "feature_3_desc": "Waxaa lagu heli karaa luuqado badan si loo gaaro dad badan oo caalami ah.",
+  "feature_4_title": "Falanqayn",
+  "feature_4_desc": "Dashboard-waqtiga-dhabta ah si aad u maamusho si sax ah.",
+
+  "contact_title": "Aan wada hadalno",
+  "contact_desc": "Su’aal, fikrad ama mashruuc? Kooxdayadu si dhakhso ah ayay kuugu soo jawaabi doontaa.",
+  "contact_cta": "Nala soo xiriir",
+
+  "footer_rights": "Xuquuqda oo dhan waa la xifdiyay"
 }

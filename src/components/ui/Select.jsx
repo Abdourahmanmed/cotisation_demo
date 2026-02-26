@@ -4,14 +4,19 @@ export default function Select({ className = "", children, ...props }) {
       <select
         {...props}
         className={
-          "w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition " +
-          "focus:border-emerald-400/40 focus:bg-white/10 focus:ring-4 focus:ring-emerald-400/10 " +
+          // ✅ White/Green theme
+          "w-full appearance-none rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition " +
+          "shadow-sm " +
+          "focus:border-emerald-500 focus:ring-4 focus:ring-emerald-200/60 " +
+          "disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 " +
           className
         }
       >
         {children}
       </select>
-      <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/50">
+
+      {/* chevron */}
+      <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-500">
         ▾
       </div>
     </div>
